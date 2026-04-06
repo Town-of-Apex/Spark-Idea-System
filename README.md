@@ -39,31 +39,36 @@ chmod +x dev.sh
 
 ---
 
-## 🛠️ System Features
-- **Dynamic AI Insights**: Every Spark is automatically analyzed for *Difficulty*, *Public Impact*, and *Strategic Department*.
-- **Constellation Similarity**: Uses vector embeddings to visually and numerically group related ideas.
-- **Impact vs. Effort Matrix**: A big-picture view of "Quick Wins" vs. "Big Bets" using AI-estimated metrics.
-- **Keyword Pulse**: A keyword-cloud driven by actual idea frequency, filtering out noise.
-- **AI Lab (Admin)**: Add your own "Analysis Dimensions" to have the AI extract new metadata fields from every submission.
+## 🛡️ Administrative & Auth Features
+- **Demo Identity System**: Session-based authentication for `@apexnc.org` emails. 
+- **Admin-Locked Control**: The **Settings** (Admin) tab is only visible to specific verified accounts.
+- **AI Processing Transparency**: Admin-only "AI READY/PENDING" status badges on every spark card.
+- **Manual AI Reprocess**: A manual "fail-safe" button to trigger embeddings and metadata analysis if the background task needs re-running.
+- **Responsive "Zero-Bleed" Design**: Cards are now fully responsive, ensuring text and metadata stay perfectly contained on laptop and tablet screens.
+
+## 🧠 AI & Visualizations
+- **Dynamic Similarity Constellation**: An auto-scaling semantic graph that ensures all ideas are visible and clustered by similarity, regardless of dataset size.
+- **Impact vs. Effort Matrix**: Strategic prioritization of "Big Bets" and "Quick Wins" using AI-estimated metrics.
+- **Automatic Field Extraction**: The AI pulls *Public Impact*, *Effort*, and *Department* from every short-form submission automatically.
 
 ---
 
-## 🗺️ Future Roadmap
+## 🗺️ Roadmap & Next Phases
 
-### Phase 4: Administrative Excellence (Next Up)
-- [ ] **Advanced Status Tracking**: Detailed logs of when an idea moves from "Reviewing" to "Implemented."
-- [ ] **Export to CSV/PDF**: Allow leadership to export the "Big Bets" quadrant for monthly meetings.
-- [ ] **Microsoft SSO Integration**: Connect to town emails for verified identities and notifications.
+### Phase 4: Data Portability & Reporting (High Priority)
+- [ ] **Export to CSV/PDF**: Allow leadership to export the "Big Bets" quadrant and trending ideas for monthly strategy meetings.
+- [ ] **Status History & Logging**: Track the journey of a Spark from "New" to "Implemented" with timestamps and notes.
+- [ ] **Advanced Searching**: Filter ideas by department, AI impact score, or specific tags to find exactly what you need.
 
-### Phase 5: Resource & Synergy Alerts (Antigravity's Picks)
-- [ ] **Cross-Dept Synergy Detector**: AI alerts that trigger when two departments spark similar ideas, prompting collaborative projects.
-- [ ] **AI Cost-Estimation**: An AI dimension that estimates rough budget and labor hours to give leadership a better ROI picture.
-- [ ] **Citizen Portal Link**: Toggle a public flag on implemented ideas to show residents what the staff is achieving for the town.
+### Phase 5: Collaborative Intelligence
+- [ ] **Cross-Dept Synergy Detector**: Proactive AI notifications that alert staff when their idea overlaps with another department's submission.
+- [ ] **Microsoft Entra (SSO) Integration**: Move from the "Demo" auth to a production-ready Microsoft login.
+- [ ] **Project Liaison Mapping**: Assign "Implementation Leads" to high-impact ideas to drive them toward completion.
 
 ### Phase 6: Field-First & Gamification
-- [ ] **Offline-First Support**: Mobile/Tablet optimization with sync for field workers (Public Works, Fire, etc.).
-- [ ] **Apex Innovation Awards**: A leaderboard for staff whose ideas get the most traction or implementation.
-- [ ] **QR-Spark**: Print dynamic QR codes for physical break rooms that link directly to specific "Problem Prompts."
+- [ ] **Mobile Sync**: Optimized offline-first experience for field workers (Public Works, Fire, Police).
+- [ ] **Apex Innovation Leaderboard**: Recognizing staff members who contribute the most implemented ideas.
+- [ ] **Physical 'Spark' Stations**: QR codes for breakrooms that link directly to specific problem-prompting challenges.
 
 ---
 
