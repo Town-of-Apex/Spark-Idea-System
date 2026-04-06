@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-deep-ink: #1F2A2E;
+  --color-soft-canvas: #F7F9F8;
+  --color-muted-slate: #5C6B73;
+  --color-apex-green: #2F6F5E;
+  --color-warm-signal: #F2A65A;
+  --color-cool-insight: #5DA9E9;
+  --color-soft-success: #7BC47F;
+  --color-line-gray: #E2E8E5;
+  --color-hover-tint: rgba(47, 111, 94, 0.06);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-dm-serif), ui-serif, Georgia, serif;
+}
+
+body {
+  @apply bg-soft-canvas text-deep-ink leading-relaxed;
+}
