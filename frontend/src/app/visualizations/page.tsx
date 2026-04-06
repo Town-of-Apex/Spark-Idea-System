@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo, useRef } from "react";
 import IdeaCard, { IdeaType } from "@/components/IdeaCard";
+import { useAuth } from "@/context/AuthContext";
 
 const API_URL = "http://localhost:8000";
 
@@ -9,36 +10,41 @@ export default function VisualizationsPage() {
   const [stats, setStats] = useState<any>(null);
   const [wordcloud, setWordcloud] = useState<{ text: string; value: number }[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<any>(null);
+  const { token } = useAuth();
 
   useEffect(() => {
-    fetchAllIdeas();
-    fetchStats();
-    fetchWordcloud();
-  }, []);
+    if (token) {
+        fetchAllIdeas();
+        fetchStats();
+        fetchWordcloud();
+    }
+  }, [token]);
 
   const fetchAllIdeas = async () => {
-    const res = await fetch(`${API_URL}/ideas/?limit=1000`);
+    const res = await fetch(`${API_URL}/ideas/?limit=1000`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
     setAllIdeas(await res.json());
   };
 
   const fetchStats = async () => {
-    const res = await fetch(`${API_URL}/admin/stats`);
+    const res = await fetch(`${API_URL}/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
     setStats(await res.json());
   };
 
   const fetchWordcloud = async () => {
-    const res = await fetch(`${API_URL}/analytics/wordcloud`);
+    const res = await fetch(`${API_URL}/analytics/wordcloud`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
     setWordcloud(await res.json());
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "new": return "#5C6B73";
-      case "in progress": return "#5DA9E9";
-      case "implemented": return "#2F6F5E";
-      case "reviewing": return "#F2A65A";
-      default: return "#E2E8E5";
-    }
+  const getIdeaColor = (idea: IdeaType) => {
+    if (idea.is_new) return "#F2A65A"; // Warm signal for new
+    if (idea.tags.length > 0) return idea.tags[0].color;
+    return "#5C6B73"; // Muted slate default
   };
 
   // Matrix Dots Logic
@@ -51,8 +57,8 @@ export default function VisualizationsPage() {
         text: idea.text,
         x: difficulty, // Implementation Difficulty on X
         y: impact,     // Public Impact on Y
-        color: getStatusColor(idea.status),
-        status: idea.status
+        color: getIdeaColor(idea),
+        isNew: idea.is_new
       };
     }).filter(p => !isNaN(p.x) && !isNaN(p.y));
   }, [allIdeas]);
@@ -69,25 +75,38 @@ export default function VisualizationsPage() {
         {/* Left Column: Stats & Word Cloud */}
         <div className="lg:col-span-1 space-y-6">
             <section className="bg-white p-6 rounded-[24px] border border-line-gray/30 shadow-sm">
-                <h3 className="text-xs uppercase font-bold text-muted-slate mb-6">Status Spread</h3>
+                <h3 className="text-xs uppercase font-bold text-muted-slate mb-6">Tag Distribution</h3>
                 <div className="space-y-4">
-                    {Object.entries(stats?.ideas_by_status || {}).map(([status, count]: [string, any]) => (
-                        <div key={status} className="space-y-1.5">
+                    {allIdeas.reduce((acc: any, idea) => {
+                        idea.tags.forEach(t => {
+                            acc[t.name] = (acc[t.name] || 0) + 1;
+                        });
+                        return acc;
+                    }, {} as any) && Object.entries(
+                        allIdeas.reduce((acc: any, idea) => {
+                            idea.tags.forEach(t => {
+                                acc[t.name] = { count: (acc[t.name]?.count || 0) + 1, color: t.color };
+                            });
+                            return acc;
+                        }, {} as any)
+                    ).map(([name, data]: [string, any]) => (
+                        <div key={name} className="space-y-1.5">
                             <div className="flex justify-between text-[11px] font-bold text-deep-ink">
-                                <span>{status}</span>
-                                <span>{count}</span>
+                                <span>{name}</span>
+                                <span>{data.count}</span>
                             </div>
                             <div className="h-1.5 bg-soft-canvas rounded-full overflow-hidden">
                                 <div 
                                     className="h-full rounded-full transition-all duration-1000" 
                                     style={{ 
-                                        width: `${(count / (stats?.total_ideas || 1)) * 100}%`,
-                                        backgroundColor: getStatusColor(status)
+                                        width: `${(data.count / allIdeas.length) * 100}%`,
+                                        backgroundColor: data.color
                                     }}
                                 ></div>
                             </div>
                         </div>
                     ))}
+                    {allIdeas.length === 0 && <p className="text-xs text-muted-slate italic">Waiting for sparks...</p>}
                 </div>
             </section>
 
@@ -169,7 +188,7 @@ export default function VisualizationsPage() {
                                 transform: 'translate(-50%, -120%)'
                             }}
                         >
-                            <p className="text-xs font-bold mb-2 text-apex-green uppercase tracking-widest">{hoveredPoint.status}</p>
+                            <p className="text-xs font-bold mb-2 text-apex-green uppercase tracking-widest">{hoveredPoint.isNew ? "New Spark" : "Spark"}</p>
                             <p className="text-sm font-medium leading-relaxed">{hoveredPoint.text}</p>
                             <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-[10px] opacity-60 uppercase font-bold">
                                 <span>Impact: {hoveredPoint.y}</span>
@@ -201,31 +220,64 @@ export default function VisualizationsPage() {
 }
 
 function ConstellationView() {
-    const FRICTION = 0.94;
-    const ATTRACTION = 0.006;
-    const REPULSION = 0.01;
-    const GRAVITY = 0.0006;
+    const FRICTION = 0.90; // Lower friction means nodes settle faster but move more decisively
+    const ATTRACTION = 0.008; // Base attraction for links
+    const REPULSION = 0.015; // Base repulsion to keep nodes separate
+    const GRAVITY = 0.0008; // Center gravity
 
+    const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const nodesRef = useRef<any[]>([]);
     const linksRef = useRef<any[]>([]);
     const hoveredRef = useRef<any>(null);
+    const maxDistRef = useRef(200); // Tracks current spread for dynamic zoom
     const [hoveredNode, setHoveredNode] = useState<any>(null);
+    const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
+    const { token } = useAuth();
 
     useEffect(() => {
-        fetch(`${API_URL}/analytics/constellation`)
+        const updateSize = () => {
+            if (containerRef.current) {
+                const { width, height } = containerRef.current.getBoundingClientRect();
+                setDimensions({ width, height });
+            }
+        };
+
+        window.addEventListener("resize", updateSize);
+        updateSize();
+        return () => window.removeEventListener("resize", updateSize);
+    }, []);
+
+    useEffect(() => {
+        if (!token) return;
+        fetch(`${API_URL}/analytics/constellation`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
             .then(res => res.json())
             .then(data => {
                 linksRef.current = data.links;
-                nodesRef.current = data.nodes.map((n: any) => ({
-                    ...n,
-                    x: Math.random() * 800, // Using pixel coords for canvas
-                    y: Math.random() * 400,
-                    vx: (Math.random() - 0.5) * 6,
-                    vy: (Math.random() - 0.5) * 6
-                }));
+                // If nodes were already there, try to keep their positions
+                const existingNodes = nodesRef.current;
+                nodesRef.current = data.nodes.map((n: any) => {
+                    const existing = existingNodes.find(ex => ex.id === n.id);
+                    if (existing) return { ...n, ...existing };
+                    
+                    // New nodes: place processing ones on periphery, clamped to dimensions
+                    const angle = Math.random() * Math.PI * 2;
+                    // Max radius should be half the smaller dimension to stay safe
+                    const maxRadius = Math.min(dimensions.width, dimensions.height) * 0.4;
+                    const radius = n.processing ? maxRadius : Math.random() * (maxRadius * 0.6);
+                    
+                    return {
+                        ...n,
+                        x: dimensions.width / 2 + Math.cos(angle) * radius, 
+                        y: dimensions.height / 2 + Math.sin(angle) * radius,
+                        vx: 0,
+                        vy: 0
+                    };
+                });
             });
-    }, []);
+    }, [token]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -236,26 +288,24 @@ function ConstellationView() {
         let frameId: number;
 
         const animate = () => {
-            const width = canvas.width;
-            const height = canvas.height;
+            const { width, height } = dimensions;
+            canvas.width = width;
+            canvas.height = height;
             const nodes = nodesRef.current;
             const links = linksRef.current;
 
-            // 1. Clear Canvas
-            ctx.clearRect(0, 0, width, height);
-
-            // 2. Physics logic
+            // 1. Physics logic
             for (let i = 0; i < nodes.length; i++) {
                 const p1 = nodes[i];
                 
-                // Repulsion
                 for (let j = i + 1; j < nodes.length; j++) {
                     const p2 = nodes[j];
                     const dx = p1.x - p2.x;
                     const dy = p1.y - p2.y;
                     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    if (dist < 150) {
-                        const force = (150 - dist) * REPULSION;
+                    
+                    if (dist < 200) {
+                        const force = (200 - dist) * REPULSION;
                         p1.vx += (dx / dist) * force;
                         p1.vy += (dy / dist) * force;
                         p2.vx -= (dx / dist) * force;
@@ -263,80 +313,103 @@ function ConstellationView() {
                     }
                 }
 
-                // Attraction
                 links.forEach(l => {
                     if (l.source === p1.id || l.target === p1.id) {
-                        const other = nodes.find(n => n.id === (l.source === p1.id ? l.target : l.source));
+                        const otherId = l.source === p1.id ? l.target : l.source;
+                        const other = nodes.find(n => n.id === otherId);
                         if (other) {
                             const dx = p1.x - other.x;
                             const dy = p1.y - other.y;
                             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                            const force = dist * l.value * ATTRACTION * 0.1;
+                            const force = (dist - 50) * ATTRACTION * l.value; 
                             p1.vx -= (dx / dist) * force;
                             p1.vy -= (dy / dist) * force;
                         }
                     }
                 });
 
-                // Center Gravity & Friction
                 const dx = (width / 2) - p1.x;
                 const dy = (height / 2) - p1.y;
-                p1.vx = (p1.vx + dx * GRAVITY) * FRICTION;
-                p1.vy = (p1.vy + dy * GRAVITY) * FRICTION;
+                p1.vx += dx * GRAVITY;
+                p1.vy += dy * GRAVITY;
+
+                p1.vx *= FRICTION;
+                p1.vy *= FRICTION;
                 p1.x += p1.vx;
                 p1.y += p1.vy;
             }
 
-            // 3. Draw Links
-            ctx.lineWidth = 1;
+            // 2. Dynamic Zoom Calculation
+            let currentMax = 100;
+            nodes.forEach(n => {
+                const dist = Math.sqrt((n.x - width/2)**2 + (n.y - height/2)**2);
+                if (dist > currentMax) currentMax = dist;
+            });
+            maxDistRef.current = maxDistRef.current * 0.95 + currentMax * 0.05;
+            const scale = (Math.min(width, height) * 0.45) / maxDistRef.current;
+
+            // --- DRAWING ---
+            ctx.clearRect(0, 0, width, height);
+            ctx.save();
+            ctx.translate(width/2, height/2);
+            ctx.scale(scale, scale);
+            ctx.translate(-width/2, -height/2);
+
+            // 1. Draw Links
+            ctx.lineWidth = 1.5 / scale; // Anti-scale line width
             links.forEach(l => {
                 const s = nodes.find(n => n.id === l.source);
                 const t = nodes.find(n => n.id === l.target);
                 if (s && t) {
-                    ctx.strokeStyle = `rgba(47, 111, 94, ${l.value * 0.3})`;
-                    ctx.beginPath();
-                    ctx.moveTo(s.x, s.y);
-                    ctx.lineTo(t.x, t.y);
-                    ctx.stroke();
+                    ctx.strokeStyle = `rgba(47, 111, 94, ${l.value * 0.4})`;
+                    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y); ctx.stroke();
                 }
             });
 
-            // 4. Draw Nodes
+            // 2. Draw Nodes
             nodes.forEach(n => {
-                ctx.fillStyle = n.color;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = n.color + "44";
-                ctx.beginPath();
-                ctx.arc(n.x, n.y, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
+                const r = 7 / scale; // Anti-scale radius
+                if (n.processing) {
+                    const s = 1 + Math.sin(Date.now() * 0.005) * 0.2;
+                    ctx.fillStyle = "rgba(242, 166, 90, 0.4)";
+                    ctx.beginPath(); ctx.arc(n.x, n.y, (4 / scale) * s, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = "#F2A65A"; ctx.setLineDash([2/scale, 2/scale]); ctx.stroke(); ctx.setLineDash([]);
+                } else {
+                    ctx.fillStyle = n.color;
+                    ctx.shadowBlur = 10 / scale;
+                    ctx.shadowColor = n.color + "44";
+                    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
                 
-                // Active hover circle
                 if (hoveredRef.current?.id === n.id) {
-                    ctx.strokeStyle = "white";
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(n.x, n.y, 10, 0, Math.PI * 2);
-                    ctx.stroke();
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 2 / scale;
+                    ctx.beginPath(); ctx.arc(n.x, n.y, 12 / scale, 0, Math.PI * 2); ctx.stroke();
                 }
             });
 
+            ctx.restore();
             frameId = requestAnimationFrame(animate);
         };
 
         animate();
         return () => cancelAnimationFrame(frameId);
-    }, []);
+    }, [dimensions]);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return;
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const width = dimensions.width;
+        const height = dimensions.height;
+        const scale = (Math.min(width, height) * 0.45) / maxDistRef.current;
+
+        // Un-scale mouse coords relative to center
+        const mx = (e.clientX - rect.left - width/2) / scale + width/2;
+        const my = (e.clientY - rect.top - height/2) / scale + height/2;
         
         const hit = nodesRef.current.find(n => {
-            const dist = Math.sqrt((n.x - x) ** 2 + (n.y - y) ** 2);
-            return dist < 15;
+            const dist = Math.sqrt((n.x - mx) ** 2 + (n.y - my) ** 2);
+            return dist < (15 / scale);
         });
 
         if (hit !== hoveredNode) {
@@ -356,11 +429,9 @@ function ConstellationView() {
                 <span className="text-[10px] font-bold px-3 py-1 bg-white/10 rounded-full text-apex-green animate-pulse">GPU Accelerated</span>
             </div>
 
-            <div className="relative w-full h-[400px]">
+            <div className="relative w-full h-[400px]" ref={containerRef}>
                 <canvas 
                     ref={canvasRef}
-                    width={800}
-                    height={400}
                     onMouseMove={handleMouseMove}
                     className="w-full h-full cursor-crosshair"
                 />
@@ -369,12 +440,12 @@ function ConstellationView() {
                     <div 
                         className="absolute z-50 bg-white text-deep-ink p-3 rounded-xl shadow-2xl w-48 pointer-events-none animate-in fade-in zoom-in duration-150 border border-apex-green/30"
                         style={{ 
-                            left: `${(hoveredNode.x / 800) * 100}%`, 
-                            top: `${(hoveredNode.y / 400) * 100}%`,
+                            left: `${hoveredNode.x}px`, 
+                            top: `${hoveredNode.y}px`,
                             transform: 'translate(-50%, -120%)'
                         }}
                     >
-                        <p className="text-[10px] font-bold mb-1 text-apex-green uppercase">{hoveredNode.status}</p>
+                        <p className="text-[10px] font-bold mb-1 text-apex-green uppercase">{hoveredNode.is_new ? "New Spark" : "Spark"}</p>
                         <p className="text-xs font-semibold leading-relaxed">{hoveredNode.text}</p>
                     </div>
                 )}

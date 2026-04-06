@@ -1,16 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
 import IdeaCard, { IdeaType } from "@/components/IdeaCard";
+import { useAuth } from "@/context/AuthContext";
 
 const API_URL = "http://localhost:8000";
 
 export default function SparksPage() {
   const [ideas, setIdeas] = useState<IdeaType[]>([]);
   const [sortBy, setSortBy] = useState<"new" | "trending">("trending");
+  const { token } = useAuth();
 
   const fetchIdeas = async (sort: string) => {
     try {
-      const res = await fetch(`${API_URL}/ideas/?sort_by=${sort}`);
+      const res = await fetch(`${API_URL}/ideas/?sort_by=${sort}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const data = await res.json();
       setIdeas(data);
     } catch (e) {
@@ -20,20 +24,7 @@ export default function SparksPage() {
 
   useEffect(() => {
     fetchIdeas(sortBy);
-  }, [sortBy]);
-
-  const handleVote = async (id: number) => {
-    const mockUsername = "User" + Math.floor(Math.random() * 10000);
-    try {
-      await fetch(`${API_URL}/ideas/${id}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: mockUsername }),
-      });
-    } catch (e) {
-      console.error("Failed to vote", e);
-    }
-  };
+  }, [sortBy, token]);
 
   return (
     <main className="max-w-5xl mx-auto px-8 py-12 w-full pb-32">
@@ -82,7 +73,7 @@ export default function SparksPage() {
           </div>
         ) : (
           ideas.map(idea => (
-            <IdeaCard key={idea.id} idea={idea} onVote={handleVote} onUpdate={() => fetchIdeas(sortBy)} />
+            <IdeaCard key={idea.id} idea={idea} onUpdate={() => fetchIdeas(sortBy)} />
           ))
         )}
       </div>

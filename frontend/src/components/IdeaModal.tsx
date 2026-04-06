@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import StatusTag from "./StatusTag";
 import { IdeaType } from "./IdeaCard";
+import { useAuth } from "@/context/AuthContext";
 
 const API_URL = "http://localhost:8000";
 
@@ -26,6 +27,7 @@ export default function IdeaModal({
   const [isEditing, setIsEditing] = useState(false);
   const [editedDescription, setEditedDescription] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const { token } = useAuth();
 
   useEffect(() => {
     fetchIdea();
@@ -35,7 +37,9 @@ export default function IdeaModal({
 
   const fetchIdea = async () => {
     try {
-      const res = await fetch(`${API_URL}/ideas/${ideaId}`);
+      const res = await fetch(`${API_URL}/ideas/${ideaId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const data = await res.json();
       setIdea(data);
       setEditedDescription(data.description || "");
@@ -47,7 +51,9 @@ export default function IdeaModal({
 
   const fetchSimilar = async () => {
     try {
-      const res = await fetch(`${API_URL}/ideas/${ideaId}/similar`);
+      const res = await fetch(`${API_URL}/ideas/${ideaId}/similar`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const data = await res.json();
       setSimilarIdeas(data);
     } catch (e) {
@@ -57,7 +63,9 @@ export default function IdeaModal({
 
   const fetchTags = async () => {
     try {
-      const res = await fetch(`${API_URL}/tags/`);
+      const res = await fetch(`${API_URL}/tags/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const data = await res.json();
       setAllTags(data);
     } catch (e) {
@@ -66,10 +74,14 @@ export default function IdeaModal({
   };
 
   const handleUpdate = async () => {
+    if (!token) return;
     try {
       await fetch(`${API_URL}/ideas/${ideaId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ description: editedDescription }),
       });
       setIsEditing(false);
@@ -81,7 +93,7 @@ export default function IdeaModal({
   };
 
   const toggleTag = async (tagId: number) => {
-    if (!idea) return;
+    if (!idea || !token) return;
     const currentTagIds = idea.tags.map(t => t.id);
     const newTagIds = currentTagIds.includes(tagId) 
         ? currentTagIds.filter(id => id !== tagId)
@@ -90,7 +102,10 @@ export default function IdeaModal({
     try {
         await fetch(`${API_URL}/ideas/${ideaId}`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({ tag_ids: newTagIds }),
         });
         fetchIdea();
@@ -114,7 +129,7 @@ export default function IdeaModal({
         <div className="p-8 border-b border-line-gray flex justify-between items-start bg-soft-canvas/30">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-                <StatusTag status={idea.status} />
+                {idea.is_new && <StatusTag status="New" />}
                 <span className="text-xs font-mono text-muted-slate uppercase tracking-widest">#{idea.id}</span>
             </div>
             <h2 className="text-3xl font-serif text-deep-ink leading-tight">{idea.text}</h2>

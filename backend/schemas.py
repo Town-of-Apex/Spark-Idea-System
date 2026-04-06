@@ -13,6 +13,27 @@ class Tag(TagBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
+class UserBase(BaseModel):
+    email: str
+    display_name: Optional[str] = None
+
+class UserCreate(UserBase):
+    pass
+
+class UserResponse(UserBase):
+    id: int
+    role: str
+    model_config = ConfigDict(from_attributes=True)
+
+class LoginRequest(BaseModel):
+    email: str
+    display_name: Optional[str] = None
+
+class SessionResponse(BaseModel):
+    token: str
+    expires_at: datetime
+    user: UserResponse
+
 class IdeaBase(BaseModel):
     text: str = Field(..., max_length=300, description="The idea text, limited to 300 characters for brevity.")
     description: Optional[str] = None
@@ -31,7 +52,7 @@ class IdeaUpdate(BaseModel):
 
 class AdminSettings(BaseModel):
     similarity_threshold: float = 0.8
-    # Add more settings here later
+    new_idea_ttl: int = 2 # Days an idea stays "New"
 
 class AIFieldValue(BaseModel):
     field_id: int
@@ -56,11 +77,15 @@ class AIField(AIFieldBase):
 class IdeaResponse(IdeaBase):
     id: int
     status: str
+    is_new: bool = False
+    has_voted: bool = False
     created_at: datetime
     vote_count: int
+    has_embedding: bool = False
     tags: List[Tag] = []
     ai_metadata: dict = {} # Map of label -> value for easy frontend use
     ai_values: List[AIFieldValue] = [] # More detailed list if needed
+    user: Optional[UserResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
 

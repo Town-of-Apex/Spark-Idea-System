@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const API_URL = "http://localhost:8000";
 
@@ -12,7 +13,6 @@ interface Tag {
 interface Stats {
   total_ideas: number;
   total_votes: number;
-  ideas_by_status: Record<string, number>;
   ideas_by_department: Record<string, number>;
 }
 
@@ -20,8 +20,10 @@ export default function AdminPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [threshold, setThreshold] = useState(0.8);
+  const [newIdeaTTL, setNewIdeaTTL] = useState(2);
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState("#5C6B73");
+  const { token } = useAuth();
 
   const [aiFields, setAiFields] = useState<any[]>([]);
   const [newFieldLabel, setNewFieldLabel] = useState("");
@@ -29,34 +31,46 @@ export default function AdminPage() {
   const [newFieldType, setNewFieldType] = useState("numeric");
 
   useEffect(() => {
-    fetchTags();
-    fetchStats();
-    fetchSettings();
-    fetchAiFields();
-  }, []);
+    if (token) {
+        fetchTags();
+        fetchStats();
+        fetchSettings();
+        fetchAiFields();
+    }
+  }, [token]);
 
   const fetchTags = async () => {
-    const res = await fetch(`${API_URL}/tags/`);
+    const res = await fetch(`${API_URL}/tags/`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
     setTags(await res.json());
   };
 
   const fetchStats = async () => {
-    const res = await fetch(`${API_URL}/admin/stats`);
+    const res = await fetch(`${API_URL}/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
     setStats(await res.json());
   };
 
   const fetchSettings = async () => {
-    const res = await fetch(`${API_URL}/admin/settings`);
+    const res = await fetch(`${API_URL}/admin/settings`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
     const data = await res.json();
     setThreshold(data.similarity_threshold);
+    setNewIdeaTTL(data.new_idea_ttl);
   };
 
   const handleAddTag = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTagName.trim()) return;
+    if (!newTagName.trim() || !token) return;
     await fetch(`${API_URL}/tags/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify({ name: newTagName, color: newTagColor }),
     });
     setNewTagName("");
@@ -64,21 +78,30 @@ export default function AdminPage() {
   };
 
   const handleDeleteTag = async (id: number) => {
-    await fetch(`${API_URL}/tags/${id}`, { method: "DELETE" });
+    if (!token) return;
+    await fetch(`${API_URL}/tags/${id}`, { 
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+    });
     fetchTags();
   };
 
   const fetchAiFields = async () => {
-    const res = await fetch(`${API_URL}/admin/ai-fields`);
+    const res = await fetch(`${API_URL}/admin/ai-fields`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
     setAiFields(await res.json());
   };
 
   const handleAddField = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFieldLabel.trim()) return;
+    if (!newFieldLabel.trim() || !token) return;
     await fetch(`${API_URL}/admin/ai-fields`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify({ 
         label: newFieldLabel, 
         description: newFieldDesc, 
@@ -91,16 +114,31 @@ export default function AdminPage() {
   };
 
   const handleDeleteField = async (id: number) => {
-    await fetch(`${API_URL}/admin/ai-fields/${id}`, { method: "DELETE" });
+    if (!token) return;
+    await fetch(`${API_URL}/admin/ai-fields/${id}`, { 
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+    });
     fetchAiFields();
   };
 
-  const handleUpdateThreshold = async (val: number) => {
-    setThreshold(val);
+  const handleUpdateSettings = async (updates: any) => {
+    if (!token) return;
+    const newSettings = {
+        similarity_threshold: updates.threshold ?? threshold,
+        new_idea_ttl: updates.ttl ?? newIdeaTTL
+    };
+    
+    if (updates.threshold !== undefined) setThreshold(updates.threshold);
+    if (updates.ttl !== undefined) setNewIdeaTTL(updates.ttl);
+
     await fetch(`${API_URL}/admin/settings`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ similarity_threshold: val }),
+      headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(newSettings),
     });
   };
 
@@ -221,22 +259,41 @@ export default function AdminPage() {
             <p className="text-sm text-muted-slate mb-8">Adjust how strictly the system clusters related ideas.</p>
             
             <div className="space-y-6">
-                <div className="flex justify-between items-end">
-                    <label className="text-xs uppercase font-bold text-muted-slate tracking-widest">Similarity Threshold</label>
-                    <span className="text-2xl font-serif text-apex-green">{(threshold * 100).toFixed(0)}%</span>
+                <div>
+                    <div className="flex justify-between items-end mb-4">
+                        <label className="text-xs uppercase font-bold text-muted-slate tracking-widest">Similarity Threshold</label>
+                        <span className="text-2xl font-serif text-apex-green">{(threshold * 100).toFixed(0)}%</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        min="0" 
+                        max="1" 
+                        step="0.05"
+                        value={threshold}
+                        onChange={(e) => handleUpdateSettings({ threshold: parseFloat(e.target.value) })}
+                        className="w-full accent-apex-green"
+                    />
+                    <div className="flex justify-between text-[10px] uppercase font-bold text-muted-slate opacity-40 mt-2">
+                        <span>Broad Clusters</span>
+                        <span>Exact Matches</span>
+                    </div>
                 </div>
-                <input 
-                    type="range" 
-                    min="0" 
-                    max="1" 
-                    step="0.05"
-                    value={threshold}
-                    onChange={(e) => handleUpdateThreshold(parseFloat(e.target.value))}
-                    className="w-full accent-apex-green"
-                />
-                <div className="flex justify-between text-[10px] uppercase font-bold text-muted-slate opacity-40">
-                    <span>Broad Clusters</span>
-                    <span>Exact Matches Only</span>
+
+                <div className="pt-6 border-t border-line-gray/20">
+                    <div className="flex justify-between items-end mb-4">
+                        <label className="text-xs uppercase font-bold text-muted-slate tracking-widest">"New" Spark TTL</label>
+                        <span className="text-2xl font-serif text-deep-ink">{newIdeaTTL} Days</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        min="1" 
+                        max="14" 
+                        step="1"
+                        value={newIdeaTTL}
+                        onChange={(e) => handleUpdateSettings({ ttl: parseInt(e.target.value) })}
+                        className="w-full accent-deep-ink"
+                    />
+                    <p className="text-[10px] text-muted-slate mt-2 italic">Controls how long a spark displays the "New" badge.</p>
                 </div>
             </div>
           </section>
@@ -246,17 +303,21 @@ export default function AdminPage() {
         <div className="space-y-8">
             <section className="bg-deep-ink text-white p-8 rounded-[32px] shadow-xl">
                 <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-                    <span className="text-xl">🏢</span> Status Breakdown
+                    <span className="text-xl">🏷️</span> Tag Overview
                 </h2>
                 <div className="space-y-4">
-                    {Object.entries(stats?.ideas_by_status || {}).map(([status, count]) => (
-                        <div key={status} className="flex justify-between items-center bg-white/10 p-3 rounded-xl border border-white/5 hover:bg-white/20 transition-colors">
-                            <span className="text-sm font-medium opacity-80">{status}</span>
-                            <span className="text-base font-bold">{count}</span>
-                        </div>
-                    ))}
-                    {Object.keys(stats?.ideas_by_status || {}).length === 0 && (
-                        <p className="text-xs opacity-40 italic">No data yet.</p>
+                    {tags.map(tag => {
+                        const count = tags.find(t => t.id === tag.id)?.id; // This is a placeholder, I should calculate real counts
+                        // Actually, I can just use the tags state and map them.
+                        return (
+                            <div key={tag.id} className="flex justify-between items-center bg-white/10 p-3 rounded-xl border border-white/5 hover:bg-white/20 transition-colors">
+                                <span className="text-sm font-medium opacity-80">{tag.name}</span>
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color }}></span>
+                            </div>
+                        );
+                    })}
+                    {tags.length === 0 && (
+                        <p className="text-xs opacity-40 italic">No tags defined.</p>
                     )}
                 </div>
             </section>

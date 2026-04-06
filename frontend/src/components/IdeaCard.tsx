@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import StatusTag from "./StatusTag";
 import IdeaModal from "./IdeaModal";
+import { useAuth } from "@/context/AuthContext";
 
 export interface IdeaType {
   id: number;
@@ -10,10 +11,14 @@ export interface IdeaType {
   username: string;
   department: string | null;
   status: string;
+  is_new: boolean;
+  has_voted: boolean;
   vote_count: number;
+  has_embedding: boolean;
   created_at: string;
   tags: { id: number; name: string; color: string }[];
-  ai_metadata: Record<string, string>;
+  ai_metadata?: Record<string, string>;
+  user?: { id: number; email: string; display_name: string | null; role: string };
 }
 
 const API_URL = "http://localhost:8000";
@@ -24,12 +29,12 @@ export default function IdeaCard({
     onUpdate 
 }: { 
     idea: IdeaType; 
-    onVote: (id: number) => void;
+    onVote?: (id: number) => void;
     onUpdate: () => void;
 }) {
-  const [hasVoted, setHasVoted] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [similarCount, setSimilarCount] = useState(0);
+  const { token } = useAuth();
 
   useEffect(() => {
     fetchSimilarCount();
@@ -37,19 +42,48 @@ export default function IdeaCard({
 
   const fetchSimilarCount = async () => {
     try {
-        const res = await fetch(`${API_URL}/ideas/${idea.id}/similar`);
+        const res = await fetch(`${API_URL}/ideas/${idea.id}/similar`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         const data = await res.json();
-        setSimilarCount(data.length);
+        setSimilarCount(Array.isArray(data) ? data.length : 0);
     } catch (e) {
         console.error(e);
     }
   };
 
-  const handleVote = (e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent opening modal
-    if (!hasVoted) {
-      setHasVoted(true);
-      onVote(idea.id);
+  const handleVote = async (e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    if (!token) return;
+
+    try {
+        const res = await fetch(`${API_URL}/ideas/${idea.id}/vote`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        
+        if (res.ok) {
+            onUpdate();
+        }
+    } catch (err) {
+        console.error("Vote failed", err);
+    }
+  };
+
+  const handleProcess = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!token) return;
+    try {
+        await fetch(`${API_URL}/ideas/${idea.id}/process`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        onUpdate();
+    } catch (err) {
+        console.error("AI Process trigger failed", err);
     }
   };
 
@@ -57,19 +91,19 @@ export default function IdeaCard({
     <>
       <div 
         onClick={() => setShowModal(true)}
-        className="group relative bg-white p-6 rounded-[24px] shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_45px_-10px_rgba(47,111,94,0.12)] hover:-translate-y-[4px] transition-all duration-500 ease-out border border-line-gray/30 hover:border-apex-green/20 cursor-pointer flex gap-6"
+        className="group relative bg-white p-6 rounded-[24px] shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_45px_-10px_rgba(47,111,94,0.12)] hover:-translate-y-[4px] transition-all duration-500 ease-out border border-line-gray/30 hover:border-apex-green/20 cursor-pointer flex gap-6 animate-in fade-in slide-in-from-bottom-4"
       >
         
         {/* Vote Column */}
         <div className="flex flex-col items-center justify-start pt-1">
           <button 
             onClick={handleVote}
-            className={`flex flex-col items-center justify-center p-3 rounded-[16px] min-w-[3.5rem] transition-all duration-300 ${hasVoted ? "bg-warm-signal/15 text-warm-signal ring-2 ring-warm-signal/20" : "bg-soft-canvas text-muted-slate hover:bg-line-gray hover:text-deep-ink"}`}
+            className={`flex flex-col items-center justify-center p-3 rounded-[16px] min-w-[3.5rem] transition-all duration-300 ${idea.has_voted ? "bg-warm-signal/15 text-warm-signal ring-2 ring-warm-signal/20" : "bg-soft-canvas text-muted-slate hover:bg-line-gray hover:text-deep-ink"}`}
           >
-            <svg className={`w-8 h-8 transition-transform duration-500 ${hasVoted ? "fill-warm-signal scale-110 rotate-12" : "fill-transparent stroke-current stroke-[2.5]"}`} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className={`w-8 h-8 transition-transform duration-500 ${idea.has_voted ? "fill-warm-signal scale-110 rotate-12" : "fill-transparent stroke-current stroke-[2.5]"}`} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 4L4 12h5v8h6v-8h5L12 4z" strokeLinejoin="round" />
             </svg>
-            <span className="font-bold text-base mt-2 tracking-tighter">{idea.vote_count + (hasVoted ? 1 : 0)}</span>
+            <span className="font-bold text-base mt-2 tracking-tighter">{idea.vote_count}</span>
           </button>
         </div>
 
@@ -78,22 +112,48 @@ export default function IdeaCard({
           <div>
             <div className="flex justify-between items-start mb-3">
               <div className="flex gap-2 items-center">
-                <StatusTag status={idea.status} />
-                {idea.tags.slice(0, 2).map(tag => (
-                   <span key={tag.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} title={tag.name}></span>
+              <div className="flex gap-2 items-center">
+                {idea.is_new && <StatusTag status="New" />}
+                {idea.tags.slice(0, 3).map(tag => (
+                   <span key={tag.id} className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white" style={{ backgroundColor: tag.color }}>
+                     {tag.name}
+                   </span>
                 ))}
               </div>
-              <span className="text-[11px] font-bold text-muted-slate/60 uppercase tracking-widest bg-soft-canvas px-2 py-1 rounded-md">
-                {idea.department || "Town Staff"}
-              </span>
+              </div>
+              <div className="flex flex-col items-end gap-1.5 text-right">
+                <span className="text-[11px] font-bold text-muted-slate/60 uppercase tracking-widest bg-soft-canvas px-2 py-1 rounded-md">
+                    {idea.department || "Town Staff"}
+                </span>
+                {/* Admin Only: Embedding Status & Action */}
+                {token && useAuth().user?.role === "admin" && (
+                    <div className="flex items-center gap-1">
+                        <span className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded border ${idea.has_embedding ? "text-apex-green border-apex-green/30 bg-apex-green/5" : "text-warm-signal border-warm-signal/30 bg-warm-signal/5 animate-pulse"}`}>
+                            {idea.has_embedding ? "AI READY" : "AI PENDING"}
+                        </span>
+                        <button 
+                            onClick={handleProcess}
+                            className="text-[8px] font-black underline hover:text-apex-green transition-colors opacity-50 hover:opacity-100"
+                            title="Manually trigger AI Embedding/Analysis"
+                        >
+                            REPROCESS
+                        </button>
+                    </div>
+                )}
+              </div>
             </div>
-            <h3 className="text-xl md:text-[23px] font-medium text-deep-ink leading-[1.3] tracking-tight group-hover:text-apex-green transition-colors">
+            <h3 className="text-xl md:text-[23px] font-medium text-deep-ink leading-[1.3] tracking-tight group-hover:text-apex-green transition-colors line-clamp-2">
               {idea.text}
             </h3>
           </div>
 
           <div className="mt-6 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-muted-slate pt-4 border-t border-line-gray/30">
-            <span>by {idea.username}</span>
+            <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-line-gray rounded-full flex items-center justify-center text-[8px]">
+                    {(idea.user?.display_name || idea.username || "A")[0].toUpperCase()}
+                </div>
+                <span>{idea.user?.display_name || idea.username}</span>
+            </div>
             <div className="flex gap-4">
                 {similarCount > 0 && (
                     <span className="text-warm-signal flex items-center gap-1.5 animate-pulse">

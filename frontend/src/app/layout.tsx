@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import { AuthProvider } from "@/context/AuthContext";
+import AuthWrapper from "@/components/AuthWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -30,10 +31,11 @@ export default function RootLayout({
       className={`${inter.variable} ${dmSerif.variable} h-full antialiased bg-soft-canvas text-deep-ink selection:bg-apex-green selection:text-white`}
     >
       <body className="font-sans min-h-screen flex flex-row">
-        <Sidebar />
-        <div className="flex-1 overflow-auto h-screen relative bg-soft-canvas">
-          {children}
-        </div>
+        <AuthProvider>
+          <AuthWrapper>
+            {children}
+          </AuthWrapper>
+        </AuthProvider>
       </body>
     </html>
   );
