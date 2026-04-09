@@ -13,9 +13,15 @@ import models
 import schemas
 import database
 import ai_utils
+import os
 
 # Create DB schema
 models.Base.metadata.create_all(bind=database.engine)
+
+# Load Badges config
+BADGES_PATH = os.path.join(os.path.dirname(__file__), "badges.json")
+with open(BADGES_PATH, "r") as f:
+    BADGES_DATA = json.load(f)
 
 app = FastAPI(title="Spark Idea System MVP API")
 
@@ -77,6 +83,16 @@ def login(request: schemas.LoginRequest, db: Session = Depends(database.get_db))
         db.commit()
         db.refresh(user)
     
+    # Update login metrics
+    now = datetime.now()
+    user.login_count += 1
+    user.last_login_at = now
+    db.commit()
+    db.refresh(user)
+
+    # Check achievements on login
+    check_achievements(user.id, db)
+
     # Create session
     token = str(uuid.uuid4())
     expires_at = datetime.now() + timedelta(days=7)
@@ -88,7 +104,17 @@ def login(request: schemas.LoginRequest, db: Session = Depends(database.get_db))
     return {"token": token, "expires_at": expires_at, "user": user}
 
 @app.get("/auth/me", response_model=schemas.UserResponse)
-def get_me(current_user: models.User = Depends(get_current_user)):
+def get_me(db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
+    # Check if this is a new day for login counting
+    now = datetime.now()
+    if not current_user.last_login_at or current_user.last_login_at.date() < now.date():
+        current_user.login_count += 1
+        current_user.last_login_at = now
+        db.commit()
+        db.refresh(current_user)
+        # Check for new login-based achievements
+        check_achievements(current_user.id, db)
+        
     return current_user
 
 @app.post("/auth/logout")
@@ -268,6 +294,9 @@ def create_idea(idea: schemas.IdeaCreate, background_tasks: BackgroundTasks, db:
     # 2. Queue AI processing in background
     background_tasks.add_task(process_ai_async, db_idea.id)
     
+    # 3. Check achievements
+    check_achievements(current_user.id, db)
+
     return map_idea_to_response(db_idea, db, current_user=current_user)
 
 @app.get("/ideas/", response_model=List[schemas.IdeaResponse])
@@ -328,6 +357,10 @@ def vote_idea(idea_id: int, db: Session = Depends(database.get_db), current_user
     idea.vote_count += 1
     db.commit()
     db.refresh(idea)
+
+    # Check achievements after vote
+    check_achievements(current_user.id, db)
+
     return map_idea_to_response(idea, db, current_user=current_user)
 
 @app.get("/ideas/{idea_id}/similar", response_model=List[schemas.IdeaResponse])
@@ -506,3 +539,84 @@ def update_admin_settings(settings: schemas.AdminSettings, db: Session = Depends
 
     db.commit()
     return {"detail": "Settings updated"}
+
+# --- ACHIEVEMENTS ---
+
+def check_achievements(user_id: int, db: Session):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return
+    
+    # Calculate metrics
+    sparks_shared = db.query(models.Idea).filter(models.Idea.user_id == user_id).count()
+    sparks_voted = db.query(models.Vote).filter(models.Vote.user_id == user_id).count()
+    login_count = user.login_count
+
+    metrics = {
+        "sparks_shared": sparks_shared,
+        "sparks_voted": sparks_voted,
+        "login_count": login_count
+    }
+
+    # Get existing achievements to avoid duplicates
+    existing = {a.achievement_id for a in db.query(models.UserAchievement).filter(models.UserAchievement.user_id == user_id).all()}
+
+    for badge in BADGES_DATA:
+        if badge["id"] not in existing:
+            metric_val = metrics.get(badge["metric"], 0)
+            if metric_val >= badge["threshold"]:
+                new_ach = models.UserAchievement(user_id=user_id, achievement_id=badge["id"])
+                db.add(new_ach)
+    
+    db.commit()
+
+@app.get("/users/me/achievements", response_model=schemas.UserAchievementsResponse)
+def get_my_achievements(db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
+    # Run a quick check just in case
+    check_achievements(current_user.id, db)
+
+    # Get metrics
+    sparks_shared = db.query(models.Idea).filter(models.Idea.user_id == current_user.id).count()
+    sparks_voted = db.query(models.Vote).filter(models.Vote.user_id == current_user.id).count()
+    login_count = current_user.login_count
+
+    achievements = db.query(models.UserAchievement).filter(models.UserAchievement.user_id == current_user.id).all()
+    ach_map = {a.achievement_id: a for a in achievements}
+
+    badges = []
+    for b in BADGES_DATA:
+        ach = ach_map.get(b["id"])
+        badges.append({
+            "id": b["id"],
+            "name": b["name"],
+            "description": b["description"],
+            "metric": b["metric"],
+            "threshold": b["threshold"],
+            "icon": b["icon"],
+            "achieved": ach is not None,
+            "achieved_at": ach.achieved_at if ach else None,
+            "notified": bool(ach.notified) if ach else False
+        })
+
+    return {
+        "badges": badges,
+        "metrics": {
+            "sparks_shared": sparks_shared,
+            "sparks_voted": sparks_voted,
+            "login_count": login_count
+        }
+    }
+
+@app.post("/users/me/achievements/{achievement_id}/ack")
+def acknowledge_achievement(achievement_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
+    ach = db.query(models.UserAchievement).filter(
+        models.UserAchievement.user_id == current_user.id,
+        models.UserAchievement.achievement_id == achievement_id
+    ).first()
+    
+    if not ach:
+        raise HTTPException(status_code=404, detail="Achievement not found for this user")
+    
+    ach.notified = 1
+    db.commit()
+    return {"status": "success"}

@@ -24,6 +24,8 @@ class User(Base):
     external_id = Column(String(200), nullable=True)
     role = Column(String(50), default="user") # user, admin
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    login_count = Column(Integer, default=0)
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     ideas = relationship("Idea", back_populates="user")
@@ -110,3 +112,12 @@ class Vote(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     user = relationship("User", back_populates="votes")
+
+class UserAchievement(Base):
+    __tablename__ = "user_achievements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    achievement_id = Column(String(100), nullable=False)
+    achieved_at = Column(DateTime(timezone=True), server_default=func.now())
+    notified = Column(Integer, default=0) # 0 = no, 1 = yes (SQLite uses int for bool often)

@@ -97,3 +97,18 @@ class SystemStats(BaseModel):
     total_votes: int
     ideas_by_status: dict
     ideas_by_department: dict
+
+class AchievementBadge(BaseModel):
+    id: str
+    name: str
+    description: str
+    metric: str
+    threshold: int
+    icon: str
+    achieved: bool = False
+    achieved_at: Optional[datetime] = None
+    notified: bool = False
+
+class UserAchievementsResponse(BaseModel):
+    badges: List[AchievementBadge]
+    metrics: dict # e.g. {"sparks_shared": 5, "sparks_voted": 10, "login_count": 3}

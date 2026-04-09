@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { AchievementProvider } from "@/context/AchievementContext";
 import AuthWrapper from "@/components/AuthWrapper";
 
 const inter = Inter({
@@ -32,9 +33,11 @@ export default function RootLayout({
     >
       <body className="font-sans min-h-[100dvh] flex flex-col">
         <AuthProvider>
-          <AuthWrapper>
-            {children}
-          </AuthWrapper>
+          <AchievementProvider>
+            <AuthWrapper>
+              {children}
+            </AuthWrapper>
+          </AchievementProvider>
         </AuthProvider>
       </body>
     </html>

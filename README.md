@@ -45,6 +45,8 @@ chmod +x dev.sh
 - **AI Processing Transparency**: Admin-only "AI READY/PENDING" status badges on every spark card.
 - **Manual AI Reprocess**: A manual "fail-safe" button to trigger embeddings and metadata analysis if the background task needs re-running.
 - **Responsive "Zero-Bleed" Design**: Cards are now fully responsive, ensuring text and metadata stay perfectly contained on laptop and tablet screens.
+- **Lightweight Gamification**: A per-user achievement system with funny badges (e.g. "Human Tesla Coil") which triggers confetti animations upon unlock.
+- **Profile Hub**: A dedicated dashboard for tracking citizen metrics (sparks shared, votes cast) and viewing collected badges.
 
 ## 🧠 AI & Visualizations
 - **Dynamic Similarity Constellation**: An auto-scaling semantic graph that ensures all ideas are visible and clustered by similarity, regardless of dataset size.
@@ -65,9 +67,11 @@ chmod +x dev.sh
 - [ ] **Microsoft Entra (SSO) Integration**: Move from the "Demo" auth to a production-ready Microsoft login.
 - [ ] **Project Liaison Mapping**: Assign "Implementation Leads" to high-impact ideas to drive them toward completion.
 
-### Phase 6: Field-First & Gamification
+### Small Improvements & Technical Debt
+- [ ] **Impact & Priority Tracking**: Implement backend logic to track and aggregate AI-estimated impact and priority scores across all user submissions.
+- [ ] **Admin UI for Achievements**: Move away from JSON-based configuration to a full administrative interface for adding/editing badges.
 - [ ] **Mobile Sync**: Optimized offline-first experience for field workers (Public Works, Fire, Police).
-- [ ] **Apex Innovation Leaderboard**: Recognizing staff members who contribute the most implemented ideas.
+- [ ] **Apex Innovation Leaderboard**: Recognize staff members who contribute the most implemented ideas.
 - [ ] **Physical 'Spark' Stations**: QR codes for breakrooms that link directly to specific problem-prompting challenges.
 
 ---

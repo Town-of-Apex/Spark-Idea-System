@@ -1,0 +1,82 @@
+[
+    {
+        "id": "spark_plug",
+        "name": "Spark Plug",
+        "description": "Shared your first Spark! You've officially joined the arsonist's club. The good kind.",
+        "metric": "sparks_shared",
+        "threshold": 1,
+        "icon": "Zap"
+    },
+    {
+        "id": "human_tesla_coil",
+        "name": "Human Tesla Coil",
+        "description": "Shared 5 Sparks. Generating ideas at an alarming rate.",
+        "metric": "sparks_shared",
+        "threshold": 5,
+        "icon": "Flame"
+    },
+    {
+        "id": "kingmaker",
+        "name": "The Kingmaker",
+        "description": "You voted on 10 Sparks. How's it feel to choose what ideas live or die?",
+        "metric": "sparks_voted",
+        "threshold": 10,
+        "icon": "Crown"
+    },
+    {
+        "id": "serial_clicker",
+        "name": "Serial Clicker",
+        "description": "Logged in 3 times. You just can't stay away, can you?",
+        "metric": "login_count",
+        "threshold": 3,
+        "icon": "MousePointerClick"
+    },
+    {
+        "id": "department_pioneer",
+        "name": "Department Pioneer",
+        "description": "You shared 3 Sparks. Your ideas are shaping the future of Apex.",
+        "metric": "sparks_shared",
+        "threshold": 3,
+        "icon": "Trophy"
+    },
+    {
+        "id": "opinionated_citizen",
+        "name": "Opinionated Citizen",
+        "description": "You voted for the first time! Way to exercise your digital democracy.",
+        "metric": "sparks_voted",
+        "threshold": 1,
+        "icon": "Target"
+    },
+    {
+        "id": "democracy_manifest",
+        "name": "Democracy Manifest",
+        "description": "50 votes recorded. You're basically a one-person town council at this point.",
+        "metric": "sparks_voted",
+        "threshold": 50,
+        "icon": "Gavel"
+    },
+    {
+        "id": "idea_archmage",
+        "name": "Idea Archmage",
+        "description": "10 Sparks shared. Your brain is a particle accelerator for town improvements.",
+        "metric": "sparks_shared",
+        "threshold": 10,
+        "icon": "Wand2"
+    },
+    {
+        "id": "resident_regular",
+        "name": "Resident Regular",
+        "description": "10 logins. You're here so often we should charge you rent.",
+        "metric": "login_count",
+        "threshold": 10,
+        "icon": "Coffee"
+    },
+    {
+        "id": "the_ghost_in_the_machine",
+        "name": "The Ghost in the Machine",
+        "description": "50 logins. You live here now. Hope you like the digital walls.",
+        "metric": "login_count",
+        "threshold": 50,
+        "icon": "Ghost"
+    }
+]

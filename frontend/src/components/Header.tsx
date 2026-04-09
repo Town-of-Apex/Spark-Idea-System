@@ -89,6 +89,13 @@ export default function Header() {
                 <p className="text-xs font-bold text-stone-800 truncate">{user?.display_name || user?.email}</p>
                 <p className="text-[10px] font-bold text-teal uppercase tracking-tighter">{user?.role}</p>
               </div>
+              <Link
+                href="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="w-full text-left px-4 py-2 text-sm font-medium text-stone-800 hover:bg-teal/5 transition-colors flex items-center gap-2"
+              >
+                Your Profile
+              </Link>
               <button 
                 onClick={() => {
                   setMenuOpen(false);

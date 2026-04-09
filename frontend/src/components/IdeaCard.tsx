@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import StatusTag from "./StatusTag";
 import IdeaModal from "./IdeaModal";
 import { useAuth } from "@/context/AuthContext";
+import { useAchievements } from "@/context/AchievementContext";
 
 export interface IdeaType {
   id: number;
@@ -35,6 +36,7 @@ export default function IdeaCard({
   const [showModal, setShowModal] = useState(false);
   const [similarCount, setSimilarCount] = useState(0);
   const { token } = useAuth();
+  const { checkNewAchievements } = useAchievements();
 
   useEffect(() => {
     fetchSimilarCount();
@@ -67,6 +69,7 @@ export default function IdeaCard({
         
         if (res.ok) {
             onUpdate();
+            checkNewAchievements();
         }
     } catch (err) {
         console.error("Vote failed", err);

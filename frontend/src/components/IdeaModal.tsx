@@ -255,16 +255,27 @@ export default function IdeaModal({
                 </div>
             </section>
 
-            {idea.ai_metadata?.["Public Impact"] && (
-                <section className="mt-auto pt-6 border-t border-line/50">
-                    <div className="bg-teal p-5 rounded-xl shadow-lg shadow-teal/30">
-                        <p className="text-[9px] font-bold text-white/60 mb-3 uppercase tracking-[0.1em]">AI Strategic Vector</p>
-                        <div className="flex justify-between items-end border-b border-white/20 pb-3 mb-3">
-                            <span className="text-2xl font-serif text-white">{idea.ai_metadata["Public Impact"]}</span>
-                            <span className="text-[9px] font-bold text-white uppercase opacity-80 mb-1">Impact Score</span>
+            {(idea.ai_metadata?.["Public Impact"] || idea.ai_metadata?.["Implementation Difficulty"]) && (
+                <section className="mt-auto pt-6 border-t border-line/50 space-y-4">
+                    {idea.ai_metadata?.["Public Impact"] && (
+                        <div className="bg-teal p-5 rounded-xl shadow-lg shadow-teal/30">
+                            <p className="text-[9px] font-bold text-white/60 mb-3 uppercase tracking-[0.1em]">AI Public Impact</p>
+                            <div className="flex justify-between items-end border-b border-white/20 pb-3 mb-3">
+                                <span className="text-2xl font-serif text-white">{idea.ai_metadata["Public Impact"]}</span>
+                                <span className="text-[9px] font-bold text-white uppercase opacity-80 mb-1">Impact Score</span>
+                            </div>
+                            <p className="text-[10px] text-white/80 leading-relaxed italic line-clamp-2">"High confidence mapping relative to Town priorities."</p>
                         </div>
-                        <p className="text-[10px] text-white/80 leading-relaxed italic line-clamp-2">"High confidence mapping relative to Town priorities."</p>
-                    </div>
+                    )}
+                    {idea.ai_metadata?.["Implementation Difficulty"] && (
+                        <div className="bg-stone-800 p-5 rounded-xl border border-white/10 shadow-lg">
+                            <p className="text-[9px] font-bold text-white/40 mb-3 uppercase tracking-[0.1em]">Implementation Difficulty</p>
+                            <div className="flex justify-between items-end border-b border-white/10 pb-3 mb-3">
+                                <span className="text-2xl font-serif text-white">{idea.ai_metadata["Implementation Difficulty"]}</span>
+                                <span className="text-[9px] font-bold text-white uppercase opacity-60 mb-1">Difficulty</span>
+                            </div>
+                        </div>
+                    )}
                 </section>
             )}
         </div>

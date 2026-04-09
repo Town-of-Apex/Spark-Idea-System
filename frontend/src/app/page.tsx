@@ -5,12 +5,14 @@ import PromptHeader from "@/components/PromptHeader";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageTemplate from "@/components/PageTemplate";
+import { useAchievements } from "@/context/AchievementContext";
 
 const API_URL = "http://localhost:8000";
 
 export default function Home() {
   const router = useRouter();
   const { token } = useAuth();
+  const { checkNewAchievements } = useAchievements();
 
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -27,6 +29,7 @@ export default function Home() {
       });
       
       setIsSubmitted(true);
+      checkNewAchievements();
       
       // Wait a moment for the user to see the success state
       setTimeout(() => {

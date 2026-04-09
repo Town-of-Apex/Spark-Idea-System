@@ -191,7 +191,7 @@ export default function VisualizationsPage() {
                             <p className="text-sm font-medium leading-relaxed">{hoveredPoint.text}</p>
                             <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-[10px] opacity-60 uppercase font-bold">
                                 <span>Impact: {hoveredPoint.y}</span>
-                                <span>Effort: {hoveredPoint.x}</span>
+                                <span>Difficulty: {hoveredPoint.x}</span>
                             </div>
                         </div>
                     )}
