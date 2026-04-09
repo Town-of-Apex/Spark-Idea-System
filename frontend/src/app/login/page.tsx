@@ -29,15 +29,15 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-soft-canvas flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white rounded-[32px] shadow-2xl border border-line-gray/20 overflow-hidden p-10 space-y-10 animate-in fade-in zoom-in duration-500">
+    <main className="min-h-screen bg-canvas flex items-center justify-center p-6">
+      <div className="w-full max-w-md bg-white rounded-[32px] shadow-2xl border border-line/20 overflow-hidden p-10 space-y-10 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-2">
-            <h1 className="text-4xl font-serif text-deep-ink tracking-tight">Welcome to Spark</h1>
-            <p className="text-sm font-bold text-apex-green uppercase tracking-widest">Apex Idea Marketplace</p>
+            <h1 className="text-4xl font-serif text-stone-800 tracking-tight">Welcome to Spark</h1>
+            <p className="text-sm font-bold text-teal uppercase tracking-widest">Apex Idea Marketplace</p>
         </div>
 
         {error && (
-            <div className="p-4 bg-warm-signal/10 border border-warm-signal/20 rounded-xl text-warm-signal text-xs font-bold animate-pulse">
+            <div className="p-4 bg-gold/10 border border-gold/20 rounded-xl text-gold text-xs font-bold animate-pulse">
                 {error}
             </div>
         )}
@@ -45,37 +45,37 @@ export default function LoginPage() {
         {step === 1 ? (
             <form onSubmit={handleNext} className="space-y-6">
                 <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold text-muted-slate tracking-widest px-1">Apex Work Email</label>
+                    <label className="text-[10px] uppercase font-bold text-rosy tracking-widest px-1">Apex Work Email</label>
                     <input 
                         type="email" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="yourname@apexnc.org"
-                        className="w-full p-4 rounded-xl bg-soft-canvas/50 border border-line-gray/20 focus:outline-none focus:ring-2 focus:ring-apex-green transition-all text-deep-ink"
+                        className="w-full p-4 rounded-xl bg-canvas/50 border border-line/20 focus:outline-none focus:ring-2 focus:ring-teal transition-all text-stone-800"
                         required
                         autoFocus
                     />
                 </div>
                 <button 
                     type="submit"
-                    className="w-full py-4 bg-deep-ink text-white rounded-xl font-bold hover:bg-black transition-all active:scale-[0.98]"
+                    className="w-full py-4 bg-stone-800 text-white rounded-xl font-bold hover:bg-black transition-all active:scale-[0.98]"
                 >
                     Continue
                 </button>
-                <p className="text-[10px] text-center text-muted-slate italic">
+                <p className="text-[10px] text-center text-rosy italic">
                     Demo Mode &mdash; No password required.
                 </p>
             </form>
         ) : (
             <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold text-muted-slate tracking-widest px-1">What should we call you? (Optional)</label>
+                    <label className="text-[10px] uppercase font-bold text-rosy tracking-widest px-1">What should we call you? (Optional)</label>
                     <input 
                         type="text" 
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         placeholder="e.g. Connor M."
-                        className="w-full p-4 rounded-xl bg-soft-canvas/50 border border-line-gray/20 focus:outline-none focus:ring-2 focus:ring-apex-green transition-all text-deep-ink"
+                        className="w-full p-4 rounded-xl bg-canvas/50 border border-line/20 focus:outline-none focus:ring-2 focus:ring-teal transition-all text-stone-800"
                         autoFocus
                     />
                 </div>
@@ -83,13 +83,13 @@ export default function LoginPage() {
                     <button 
                         type="button"
                         onClick={() => setStep(1)}
-                        className="flex-1 py-4 bg-soft-canvas text-muted-slate rounded-xl font-bold hover:bg-line-gray transition-all"
+                        className="flex-1 py-4 bg-canvas text-rosy rounded-xl font-bold hover:bg-line transition-all"
                     >
                         Back
                     </button>
                     <button 
                         type="submit"
-                        className="flex-[2] py-4 bg-apex-green text-white rounded-xl font-bold hover:bg-[#286051] transition-all shadow-lg shadow-apex-green/20"
+                        className="flex-[2] py-4 bg-teal text-white rounded-xl font-bold hover:bg-[#286051] transition-all shadow-lg shadow-teal/20"
                     >
                         Enter Marketplace
                     </button>

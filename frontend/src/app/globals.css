@@ -1,20 +1,25 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-deep-ink: #1F2A2E;
-  --color-soft-canvas: #F7F9F8;
-  --color-muted-slate: #5C6B73;
-  --color-apex-green: #2F6F5E;
-  --color-warm-signal: #F2A65A;
-  --color-cool-insight: #5DA9E9;
-  --color-soft-success: #7BC47F;
-  --color-line-gray: #E2E8E5;
-  --color-hover-tint: rgba(47, 111, 94, 0.06);
+@theme {
+  --color-rosy: #968f8b;
+  --color-forest: #44883e;
+  --color-hunter: #44693d;
+  --color-copper: #d75742;
+  --color-teal: #005a70;
+  --color-gold: #f1be48;
+  
+  /* Layering System */
+  --color-canvas: #f8f9fa;   /* L0: Background */
+  --color-surface: #ffffff;  /* L1: Cards/Sections */
+  --color-inner: #f1f3f5;    /* L2: Fields/Nested UI */
+  
+  --color-line: #e9ecef;     /* Subtle borders */
+  --color-tint: rgba(0, 90, 112, 0.06);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-dm-serif), ui-serif, Georgia, serif;
 }
 
 body {
-  @apply bg-soft-canvas text-deep-ink leading-relaxed;
+  @apply bg-canvas text-stone-800 antialiased leading-relaxed;
 }

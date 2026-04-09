@@ -6,20 +6,20 @@ export default function StatusTag({ status }: { status: string }) {
       case "reviewing":
         return "bg-blue-50 text-blue-600";
       case "in progress":
-        return "bg-cool-insight/10 text-cool-insight";
+        return "bg-teal/10 text-teal";
       case "on roadmap":
-        return "bg-warm-signal/10 text-warm-signal";
+        return "bg-gold/10 text-gold";
       case "implemented":
-        return "bg-soft-success/20 text-[#2F6F5E]"; // using apex green for text on success
+        return "bg-forest/20 text-forest";
       case "already exists":
-        return "bg-gray-100 text-gray-500";
+        return "bg-slate-100 text-rosy";
       default:
-        return "bg-gray-100 text-gray-600";
+        return "bg-slate-100 text-rosy";
     }
   };
 
   return (
-    <span className={`px-2.5 py-1 text-xs font-medium rounded-full tracking-wide ${getStatusStyles()}`}>
+    <span className={`px-2.5 py-1 text-xs font-medium rounded-md tracking-wide ${getStatusStyles()}`}>
       {status}
     </span>
   );

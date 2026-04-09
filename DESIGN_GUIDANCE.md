@@ -1,95 +1,130 @@
-# Apex Modern Design System: Visual Identity Guidance
+# Apex Modern Design System: Visual Identity & Implementation Guidance
 
-This document outlines a core design philosophy, visual elements, and interactive patterns designed to create **premium, intentional, and trustworthy** digital experiences. Use this as a reference to maintain consistency across modern professional applications.
+This document is the definitive source of truth for the **Apex Modern** design system—a "Traditionalist-Modern" aesthetic designed for the Town of Apex. It prioritizes professional structure, visual clarity, and a premium "government-but-dynamic" feel.
 
 ---
 
 ## 1. Design Philosophy: "The Modern Professional"
-This design system is built to feel **premium and precise**, yet **approachable and fluid**. It balances the structured needs of high-performance organizations with a clean, minimalist aesthetic that allows content to take center stage.
 
-### Core Principles:
-- **Clarity over Clutter**: White space is a functional choice. Avoid dense interfaces; let individual elements breathe.
-- **Micro-interactions as Delight**: Use subtle animations (lifts, fades, pulses) to make the interface feel alive and responsive to user action.
-- **Elevation & Depth**: Use soft shadows and "lifts" to indicate hierarchy and interactivity without relying on heavy borders.
-- **Aesthetic Data**: Data visualizations should be treated as core design elements, balancing technical accuracy with visual beauty.
+Apex Modern rejects the "generic startup" look (pill buttons, excessive centering, extreme roundness) in favor of a sturdy, intentional architecture.
+
+*   **Left-Aligned Authority**: Content should almost always be left-aligned. Centering is perceived as "AI-generated" or "mobile-first" and should be avoided for desktop-class operational tools.
+*   **Structural Depth**: Depth is achieved through **Surface Layering** and subtle borders rather than passive drop shadows.
+*   **Purposeful Motion**: Animations should feel like physically moving elements (lifts, slides) rather than simple fades.
+*   **Zero Emoji Policy**: Emojis are strictly prohibited. Use text or clean monochrome SVGs to maintain a high-trust, professional tone.
 
 ---
 
-## 2. Color Palette
-The primary palette is rooted in a professional "Deep Ink" and a signature "Accent Green," supported by sophisticated neutrals and functional "signal" colors.
+## 2. Color Palette & Surface Layering
 
-| Variable | Hex Code | Usage |
+The system utilizes a stepped hierarchy where each subsequent "layer" is incrementally distinct from its parent container.
+
+### Core Branding
+| Token | Hex | Usage |
 | :--- | :--- | :--- |
-| `deep-ink` | `#1F2A2E` | Primary text, dark backgrounds, high-contrast headers. |
-| `brand-accent` | `#2F6F5E` | signature branding, success states, primary buttons, active links. |
-| `soft-canvas` | `#F7F9F8` | Global background, subtle section fills. |
-| `muted-slate` | `#5C6B73` | Secondary text, labels, placeholder text. |
-| `warm-signal` | `#F2A65A` | Alerts, highlights, trending items, or "active" status. |
-| `cool-insight` | `#5DA9E9` | Technical labels, informational tags, and data-heavy indicators. |
-| `line-gray` | `#E2E8E5` | Structural borders, dividers, and subtle dividers. |
+| `teal` | `#005a70` | **Primary.** Headings, active buttons, positive states. |
+| `forest` | `#44883e` | Secondary accents, success states. |
+| `gold` | `#f1be48` | Strategic highlights, trending indicators. |
+| `copper` | `#d75742` | Alerts, destructive actions, attention-grabbers. |
+| `rosy` | `#968f8b` | Muted text, secondary labels, metadata. |
+
+### The Layering Stack (Essential for Contrast)
+| Level | Token | Hex | Usage |
+| :--- | :--- | :--- | :--- |
+| **L0: Baseline** | `bg-canvas` | `#f8f9fa` | Page background. |
+| **L1: Surface** | `bg-surface` | `#ffffff` | Cards, Modals, primary sections. |
+| **L2: Inner** | `bg-inner` | `#f1f3f5` | Form fields, nested textareas, sidebars. |
 
 ---
 
-## 3. Typography
-The system utilizes a pairing of a sturdy Serif for personality and a clean, high-performance Sans-Serif for utility.
+## 3. Typography Standards
 
-- **Primary Heading Font**: `DM Serif Display` (or similar High-Contrast Serif)
-  - *Usage*: Large page titles, hero headers, and significant numerical data.
-  - *Feel*: Authoritative, classic, and sophisticated.
-  - *Styling*: Use `tracking-tight` or `tracking-tighter` for large sizes to maintain weight.
-- **Interface/Body Font**: `Inter` (or equivalent Modern Sans-Serif)
-  - *Usage*: Navigation, body text, form fields, and metadata.
-  - *Feel*: Neutral, highly legible, and modern.
-  - *Styling*: `leading-relaxed` for body text; `font-bold` + `tracking-widest` + `uppercase` for small meta-labels.
+The system pairs a classic, high-contrast Serif with a high-performance functional Sans-Serif.
 
----
-
-## 4. Component Geometry & Depth
-Consistency in shapes and shadows creates a cohesive "physical" feel across all components.
-
-### Rounded Corners
-- **Base Container**: `24px` radius for primary cards and modal windows.
-- **Hero Sections**: `32px` radius for large, high-impact background containers.
-- **Interactive Elements**: `12px` to `16px` for buttons, inputs, and small navigation items.
-- **Status Tags**: `9999px` (Full pill shape) to distinguish them from standard buttons.
-
-### Shadows & Interaction
-- **Static State**: Subtle, low-opacity shadows (`shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]`).
-- **Hover State**: Lift the element (`-translate-y-1`) and deepen the shadow (`shadow-xl` or colored shadows like `shadow-brand-accent/20`).
-- **Active State**: Scale down slightly (`scale-[0.98]`) to provide tactile feedback.
+*   **Headings**: `DM Serif Display`
+    *   *Usage*: Page titles, hero text.
+    *   *Classes*: `font-serif text-teal tracking-tight leading-tight`
+*   **Interface**: `Inter` (or Modern Sans)
+    *   *Usage*: Navigation, labels, body text, inputs.
+    *   *Classes*: `font-sans text-stone-800`
+*   **Metadata**: `Inter` (Small/Bold/Tracked)
+    *   *Classes*: `text-[10px] font-bold uppercase tracking-[0.2em] text-rosy`
 
 ---
 
-## 5. Motion & Transitions
-Transitions must be smooth and deliberate. Standard animation duration ranges from **300ms to 500ms**.
+## 4. Geometry & Spacing Rules
 
-- **Entrance Effects**: Use a combination of `fade-in` and `slide-in-from-bottom` to reveal content hierarchically.
-- **Interactions**: Apply `transition-all duration-300 ease-out` to all interactive properties (color, shadow, transform).
-- **Dynamic Content**: Smoothly animate height changes for expanding/collapsing sections using `max-height` transitions combined with `overflow-hidden`.
-- **Status Persistence**: Use subtle `animate-pulse` animations for persistent background processes or "live" data states.
+Avoid "perfect circles." Stick to intentional squircular geometry.
+
+### Radii (Corner Roundness)
+*   **Interactive (Buttons/Inputs)**: `rounded-md` (6px) or `rounded-lg` (8px). 
+*   **Primary Containers (Cards)**: `rounded-xl` (12px).
+*   **Large Components (Modals/Heros)**: `rounded-2xl` (16px) or `rounded-[32px]`.
+*   **Rule**: NO pill shapes (`rounded-full`).
+
+### Standard Spacing Constants
+*   **Page Gutter**: `px-6 sm:px-8`.
+*   **Vertical Padding**: `py-12` (standard), `pb-32` (allow room for fixed headers/footers).
+*   **Section Gaps**: `gap-6` or `gap-8`.
+*   **Inner Card Padding**: `p-6` or `p-8`.
 
 ---
 
-## 6. Iconography & Visual Assets
-- **Symbolism**: Use clean, modern iconography or standard system emojis sparingly as accents to maintain a friendly yet professional tone.
-- **Technical Visuals**: AI or data-enhanced features should use the `cool-insight` blue or `brand-accent` green with subtle glowing effects.
-- **Fluid Interfaces**: For complex data sets, utilize physics-based interactions (attraction/repulsion) to visualize relationships dynamically.
+## 5. Structural Layout: The Page Template
+
+Every view MUST follow the `PageTemplate` structure to ensure the "anchor point" for titles is identical across the system.
+
+### Header Standards
+*   **Max Width**: Standardized to `max-w-6xl` (1152px) for desktop clarity.
+*   **Left Margin**: `mx-auto` on the container ensures consistent centering of the left-aligned content.
+*   **Title Color**: Always `text-teal`.
+*   **Separator**: A `1px border-b border-line` with `pb-8` should separate the header from the content.
+
+### Components
+1. **Header Navigation**: Top-aligned row. Active items use `bg-teal/10 text-teal`.
+2. **Cards**: `bg-surface` + `border-line` + `rounded-xl`. No shadow until hover.
+3. **Fields**: `bg-inner` + `border-line` + `focus:ring-teal`.
 
 ---
 
-## 7. Implementation Quick-Start (CSS Variables)
-To initialize this system in a new project, start with these CSS baseline variables:
+## 6. Interaction & Motion
+
+Interaction should feel tactile and responsive.
+
+### Active/Hover States
+*   **Passive State**: No shadows. Flat border only.
+*   **Hover State**: `-translate-y-0.5`, `shadow-md`, `shadow-teal/10`, and `border-teal/30`.
+*   **Click State**: `scale-[0.98]` (a brief "press" effect).
+*   **Transitions**: `transition-all duration-300 ease-out`.
+
+### Tooltips
+*   Required for all non-text buttons or complex labels.
+*   **Style**: Dark background (`bg-stone-800`), small text, subtle entrance animation.
+
+---
+
+## 7. Iconography Code
+
+*   **NO Emojis**: Strictly prohibited.
+*   **Icons**: Monochrome inline SVGs.
+*   **States**: Icons should change color (e.g., `text-rosy` to `text-teal`) or fill (`fill-transparent` to `fill-teal`) on interaction.
+
+---
+
+## 8. Development Implementation (Tailwind v4 / CSS)
 
 ```css
-:root {
-  --deep-ink: #1F2A2E;
-  --soft-canvas: #F7F9F8;
-  --muted-slate: #5C6B73;
-  --brand-accent: #2F6F5E;
-  --warm-signal: #F2A65A;
-  --cool-insight: #5DA9E9;
-  --line-gray: #E2E8E5;
+@theme {
+  --color-teal: #005a70;
+  --color-canvas: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-inner: #f1f3f5;
+  --color-line: #e9ecef;
+}
+
+body {
+  @apply bg-canvas text-stone-800 antialiased font-sans;
 }
 ```
 
-*Final Note: Ensure `antialiased` is applied to the base document to maintain the crispness of high-contrast typography.*
+_Final Directive: If a component looks "too simple," increase density via Metadata labels and check that the Surface Layering (L0 vs L1 vs L2) is distinct._

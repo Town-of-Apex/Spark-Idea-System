@@ -28,9 +28,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${dmSerif.variable} h-full antialiased bg-soft-canvas text-deep-ink selection:bg-apex-green selection:text-white`}
+      className={`${inter.variable} ${dmSerif.variable} h-full antialiased bg-canvas text-stone-800 selection:bg-teal selection:text-white`}
     >
-      <body className="font-sans min-h-screen flex flex-row">
+      <body className="font-sans min-h-[100dvh] flex flex-col">
         <AuthProvider>
           <AuthWrapper>
             {children}

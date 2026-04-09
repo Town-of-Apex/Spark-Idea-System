@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import IdeaCard, { IdeaType } from "@/components/IdeaCard";
 import { useAuth } from "@/context/AuthContext";
+import PageTemplate from "@/components/PageTemplate";
 
 const API_URL = "http://localhost:8000";
 
@@ -27,47 +28,43 @@ export default function SparksPage() {
   }, [sortBy, token]);
 
   return (
-    <main className="max-w-5xl mx-auto px-8 py-12 w-full pb-32">
-      <header className="mb-12">
-        <h1 className="text-4xl md:text-5xl font-serif text-deep-ink mb-4">Community Sparks</h1>
-        <p className="text-lg text-muted-slate max-w-2xl">
-          The collective brilliance of the Town of Apex. Upvote the ideas you want to see come to life.
-        </p>
-      </header>
-
-      <div className="flex justify-between items-center mb-10 sticky top-0 py-4 bg-soft-canvas/80 backdrop-blur-md z-10 border-b border-line-gray/50">
-        <div className="flex gap-2 p-1 bg-white/40 rounded-full border border-line-gray/30 shadow-sm">
+    <PageTemplate
+      title="Sparks"
+      subtitle="The collective creativity of the Town of Apex. Upvote the ideas you want to see come to life."
+      headerContent={
+        <div className="flex gap-2 p-1 bg-white/40 rounded-md border border-line/30 shadow-sm self-end">
           <button 
             onClick={() => setSortBy("trending")}
-            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
+            className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${
               sortBy === "trending" 
-                ? "bg-white text-deep-ink shadow-md" 
-                : "text-muted-slate hover:text-deep-ink"
+                ? "bg-teal text-white shadow-md" 
+                : "text-rosy hover:text-teal"
             }`}
           >
-            🔥 Trending
+            Trending
           </button>
           <button 
             onClick={() => setSortBy("new")}
-            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
+            className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${
               sortBy === "new" 
-                ? "bg-white text-deep-ink shadow-md" 
-                : "text-muted-slate hover:text-deep-ink"
+                ? "bg-teal text-white shadow-md" 
+                : "text-rosy hover:text-teal"
             }`}
           >
-            ✨ Newest
+            Newest
           </button>
         </div>
-        
-        <div className="text-sm font-medium text-muted-slate">
-          Showing <span className="text-deep-ink">{ideas.length}</span> ideas
+      }
+    >
+      <div className="flex justify-end mb-6">
+        <div className="text-sm font-medium text-rosy py-2 border-b border-line/30">
+          Showing <span className="text-stone-800 font-bold">{ideas.length}</span> active sparks
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
         {ideas.length === 0 ? (
-          <div className="text-center text-muted-slate py-24 bg-white/30 rounded-[24px] border border-dashed border-line-gray/50">
-            <div className="text-4xl mb-4">🌪️</div>
+          <div className="text-center text-rosy py-24 bg-white/30 rounded-xl border border-dashed border-line/50">
             <p className="text-xl font-medium">It's quiet in here...</p>
             <p className="text-sm mt-2 opacity-70 italic">Be the one to spark the next big thing.</p>
           </div>
@@ -77,6 +74,6 @@ export default function SparksPage() {
           ))
         )}
       </div>
-    </main>
+    </PageTemplate>
   );
 }

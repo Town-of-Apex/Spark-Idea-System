@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import IdeaCard, { IdeaType } from "@/components/IdeaCard";
 import { useAuth } from "@/context/AuthContext";
+import PageTemplate from "@/components/PageTemplate";
 
 const API_URL = "http://localhost:8000";
 
@@ -64,18 +65,16 @@ export default function VisualizationsPage() {
   }, [allIdeas]);
 
   return (
-    <main className="max-w-7xl mx-auto px-8 py-12 pb-32">
-      <header className="mb-12">
-        <h1 className="text-4xl font-serif text-deep-ink mb-2">Insights & Visualizations</h1>
-        <p className="text-muted-slate font-medium uppercase tracking-widest text-xs">AI-Powered Analytics for Apex</p>
-      </header>
-
+    <PageTemplate
+      title="Insights"
+      maxWidth="max-w-6xl"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
         {/* Left Column: Stats & Word Cloud */}
         <div className="lg:col-span-1 space-y-6">
-            <section className="bg-white p-6 rounded-[24px] border border-line-gray/30 shadow-sm">
-                <h3 className="text-xs uppercase font-bold text-muted-slate mb-6">Tag Distribution</h3>
+            <section className="bg-surface p-6 rounded-xl border border-line shadow-sm">
+                <h3 className="text-xs uppercase font-bold text-rosy mb-6">Tag Distribution</h3>
                 <div className="space-y-4">
                     {allIdeas.reduce((acc: any, idea) => {
                         idea.tags.forEach(t => {
@@ -91,13 +90,13 @@ export default function VisualizationsPage() {
                         }, {} as any)
                     ).map(([name, data]: [string, any]) => (
                         <div key={name} className="space-y-1.5">
-                            <div className="flex justify-between text-[11px] font-bold text-deep-ink">
+                            <div className="flex justify-between text-[11px] font-bold text-stone-800">
                                 <span>{name}</span>
                                 <span>{data.count}</span>
                             </div>
-                            <div className="h-1.5 bg-soft-canvas rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-inner rounded-md overflow-hidden">
                                 <div 
-                                    className="h-full rounded-full transition-all duration-1000" 
+                                    className="h-full rounded-md transition-all duration-1000" 
                                     style={{ 
                                         width: `${(data.count / allIdeas.length) * 100}%`,
                                         backgroundColor: data.color
@@ -106,27 +105,27 @@ export default function VisualizationsPage() {
                             </div>
                         </div>
                     ))}
-                    {allIdeas.length === 0 && <p className="text-xs text-muted-slate italic">Waiting for sparks...</p>}
+                    {allIdeas.length === 0 && <p className="text-xs text-rosy italic">Waiting for sparks...</p>}
                 </div>
             </section>
 
-            <section className="bg-white p-6 rounded-[24px] border border-line-gray/30 shadow-sm">
-                <h3 className="text-xs uppercase font-bold text-muted-slate mb-6">Keyword Pulse</h3>
-                <div className="flex flex-wrap gap-x-3 gap-y-2 justify-center py-4">
+            <section className="bg-surface p-6 rounded-xl border border-line shadow-sm">
+                <h3 className="text-xs uppercase font-bold text-rosy mb-6">Keyword Pulse</h3>
+                <div className="flex flex-wrap gap-x-3 gap-y-2 justify-center py-4 bg-inner rounded-xl">
                     {wordcloud.map((item, i) => (
                         <span 
                             key={i} 
                             style={{ 
                                 fontSize: `${Math.min(24, 10 + item.value * 2)}px`,
                                 opacity: Math.min(1, 0.4 + item.value * 0.1),
-                                color: i % 3 === 0 ? "var(--deep-ink)" : "var(--apex-green)"
+                                color: i % 3 === 0 ? "var(--stone-800)" : "var(--teal)"
                             }}
                             className="font-serif leading-none hover:scale-110 transition-transform cursor-default"
                         >
                             {item.text}
                         </span>
                     ))}
-                    {wordcloud.length === 0 && <p className="text-xs text-muted-slate italic">Analyzing text density...</p>}
+                    {wordcloud.length === 0 && <p className="text-xs text-rosy italic">Analyzing text density...</p>}
                 </div>
             </section>
         </div>
@@ -135,32 +134,32 @@ export default function VisualizationsPage() {
         <div className="lg:col-span-3 space-y-8">
             
             {/* 1. IMPACT VS EFFORT MATRIX */}
-            <section className="bg-white p-10 rounded-[32px] border border-line-gray/40 shadow-sm relative">
+            <section className="bg-surface p-10 rounded-[32px] border border-line shadow-sm relative">
                 <div className="flex justify-between items-start mb-10">
                     <div>
-                        <h2 className="text-2xl font-serif text-deep-ink mb-2">Strategic Impact Matrix</h2>
-                        <p className="text-sm text-muted-slate max-w-md">
+                        <h2 className="text-2xl font-serif text-stone-800 mb-2">Strategic Impact Matrix</h2>
+                        <p className="text-sm text-rosy max-w-md">
                             Strategic prioritization using AI-estimated metrics.
                         </p>
                     </div>
                 </div>
                 
                 {/* 4-Quadrant Matrix */}
-                <div className="relative w-full aspect-square md:aspect-video bg-soft-canvas/30 rounded-2xl border border-line-gray/20 overflow-visible p-12">
+                <div className="relative w-full aspect-square md:aspect-video bg-canvas/30 rounded-2xl border border-line/20 overflow-visible p-12">
                    
                     {/* Axes */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-line-gray/40"></div>
-                    <div className="absolute top-1/2 left-0 right-0 h-px bg-line-gray/40"></div>
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-line/40"></div>
+                    <div className="absolute top-1/2 left-0 right-0 h-px bg-line/40"></div>
 
                     {/* Labels */}
-                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] uppercase font-bold text-muted-slate tracking-[0.2em]">Implementation Difficulty →</span>
-                    <span className="absolute -left-12 top-1/2 -rotate-90 origin-center -translate-y-1/2 text-[10px] uppercase font-bold text-muted-slate tracking-[0.2em]">Public Impact →</span>
+                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] uppercase font-bold text-rosy tracking-[0.2em]">Implementation Difficulty →</span>
+                    <span className="absolute -left-12 top-1/2 -rotate-90 origin-center -translate-y-1/2 text-[10px] uppercase font-bold text-rosy tracking-[0.2em]">Public Impact →</span>
 
                     {/* Quadrant Titles */}
-                    <div className="absolute top-4 left-4 text-[9px] font-bold text-muted-slate/40 uppercase tracking-widest">Big Bets</div>
-                    <div className="absolute top-4 right-4 text-[9px] font-bold text-muted-slate/40 uppercase tracking-widest text-right">Major Projects</div>
-                    <div className="absolute bottom-4 left-4 text-[9px] font-bold text-muted-slate/40 uppercase tracking-widest">Quick Wins</div>
-                    <div className="absolute bottom-4 right-4 text-[9px] font-bold text-muted-slate/40 uppercase tracking-widest text-right">Fill-ins</div>
+                    <div className="absolute top-4 left-4 text-[9px] font-bold text-rosy/40 uppercase tracking-widest">Big Bets</div>
+                    <div className="absolute top-4 right-4 text-[9px] font-bold text-rosy/40 uppercase tracking-widest text-right">Major Projects</div>
+                    <div className="absolute bottom-4 left-4 text-[9px] font-bold text-rosy/40 uppercase tracking-widest">Quick Wins</div>
+                    <div className="absolute bottom-4 right-4 text-[9px] font-bold text-rosy/40 uppercase tracking-widest text-right">Fill-ins</div>
 
                     {/* Points */}
                     <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -181,14 +180,14 @@ export default function VisualizationsPage() {
                     {/* Hover Card */}
                     {hoveredPoint && (
                         <div 
-                            className="absolute z-50 bg-deep-ink text-white p-4 rounded-xl shadow-2xl w-64 pointer-events-none animate-in fade-in zoom-in duration-150"
+                            className="absolute z-50 bg-stone-800 text-white p-4 rounded-xl shadow-2xl w-64 pointer-events-none animate-in fade-in zoom-in duration-150"
                             style={{ 
                                 left: `${hoveredPoint.x * 10}%`, 
                                 top: `${100 - (hoveredPoint.y * 10)}%`,
                                 transform: 'translate(-50%, -120%)'
                             }}
                         >
-                            <p className="text-xs font-bold mb-2 text-apex-green uppercase tracking-widest">{hoveredPoint.isNew ? "New Spark" : "Spark"}</p>
+                            <p className="text-xs font-bold mb-2 text-teal uppercase tracking-widest">{hoveredPoint.isNew ? "New Spark" : "Spark"}</p>
                             <p className="text-sm font-medium leading-relaxed">{hoveredPoint.text}</p>
                             <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-[10px] opacity-60 uppercase font-bold">
                                 <span>Impact: {hoveredPoint.y}</span>
@@ -204,8 +203,8 @@ export default function VisualizationsPage() {
 
             <section>
                 <div className="flex justify-between items-end mb-6">
-                    <h2 className="text-2xl font-serif text-deep-ink">Recent Spark Patterns</h2>
-                    <span className="text-xs font-bold text-muted-slate uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-line-gray/30">Analytics Snapshot</span>
+                    <h2 className="text-2xl font-serif text-stone-800">Recent Spark Patterns</h2>
+                    <span className="text-xs font-bold text-rosy uppercase tracking-widest bg-white px-3 py-1 rounded-md border border-line/30">Analytics Snapshot</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {allIdeas.slice(0, 4).map(idea => (
@@ -215,7 +214,7 @@ export default function VisualizationsPage() {
             </section>
         </div>
       </div>
-    </main>
+    </PageTemplate>
   );
 }
 
@@ -419,14 +418,14 @@ function ConstellationView() {
     };
 
     return (
-        <section className="bg-deep-ink p-10 rounded-[40px] shadow-2xl relative overflow-hidden h-[550px]">
-            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle at center, #2F6F5E 0%, transparent 70%)" }}></div>
+        <section className="bg-stone-800 p-10 rounded-[40px] shadow-2xl relative overflow-hidden h-[550px]">
+            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle at center, #005a70 0%, transparent 70%)" }}></div>
             <div className="relative z-10 flex justify-between items-start mb-8 text-white">
                 <div>
                     <h2 className="text-2xl font-serif mb-2">Similarity Constellation</h2>
                     <p className="text-sm text-white/40 max-w-sm">Semantic clusters using AI embeddings. Similar ideas drift closer together.</p>
                 </div>
-                <span className="text-[10px] font-bold px-3 py-1 bg-white/10 rounded-full text-apex-green animate-pulse">GPU Accelerated</span>
+                <span className="text-[10px] font-bold px-3 py-1 bg-white/10 rounded-md text-teal animate-pulse">GPU Accelerated</span>
             </div>
 
             <div className="relative w-full h-[400px]" ref={containerRef}>
@@ -438,14 +437,14 @@ function ConstellationView() {
 
                 {hoveredNode && (
                     <div 
-                        className="absolute z-50 bg-white text-deep-ink p-3 rounded-xl shadow-2xl w-48 pointer-events-none animate-in fade-in zoom-in duration-150 border border-apex-green/30"
+                        className="absolute z-50 bg-white text-stone-800 p-3 rounded-xl shadow-2xl w-48 pointer-events-none animate-in fade-in zoom-in duration-150 border border-teal/30"
                         style={{ 
                             left: `${hoveredNode.x}px`, 
                             top: `${hoveredNode.y}px`,
                             transform: 'translate(-50%, -120%)'
                         }}
                     >
-                        <p className="text-[10px] font-bold mb-1 text-apex-green uppercase">{hoveredNode.is_new ? "New Spark" : "Spark"}</p>
+                        <p className="text-[10px] font-bold mb-1 text-teal uppercase">{hoveredNode.is_new ? "New Spark" : "Spark"}</p>
                         <p className="text-xs font-semibold leading-relaxed">{hoveredNode.text}</p>
                     </div>
                 )}
