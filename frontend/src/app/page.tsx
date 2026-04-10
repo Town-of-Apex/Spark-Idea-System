@@ -82,11 +82,11 @@ export default function Home() {
 
                   <div className="bg-canvas p-4 rounded-xl border border-line mt-4">
                     <p className="font-bold text-stone-800 mb-2 uppercase tracking-widest text-[10px]">The Upvote System:</p>
-                    <p>Each staff member can upvote a Spark once. Upvotes help us understand collective interest and priority. You can always change your mind by clicking the vote button again.</p>
+                    <p>Each person can upvote a Spark once. Upvotes help us understand collective interest and priority. You can always change your mind by clicking the vote button again.</p>
                   </div>
 
                   <div className="pt-4 opacity-70 text-[11px] italic">
-                    <p><strong>Disclaimer:</strong> Sharing an idea doesn't guarantee implementation. Everything shared here is reviewed and considered seriously by the leadership team, but constraints like budget, policy, and staffing apply. We're here to listen, explore, and ignite change together.</p>
+                    <p><strong>Disclaimer:</strong> Sharing an idea doesn't guarantee implementation. Everything shared here is reviewed and considered seriously by the IT Innovations team, but constraints like budget, policy, and staffing apply. We're here to listen, explore, and ignite change together.</p>
                   </div>
                 </div>
               </details>
