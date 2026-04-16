@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Spark It{% endblock %}
+{% block meta_desc %}Share your next big idea with the Town of Apex.{% endblock %}
+
+{% block content %}
+
+<div class="page-header" style="margin-bottom:0">
+    <!-- Spark submission form -->
+    <div class="spark-form-wrapper">
+
+        <!-- Success state (hidden until submit) -->
+        <div id="success-state" class="spark-success hidden">
+            <div class="spark-success-icon">
+                <svg width="32" height="32" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h2 class="spark-success-title">Spark Ignited!</h2>
+            <p class="spark-success-sub">Redirecting you to the feed&hellip;</p>
+        </div>
+
+        <!-- Form state -->
+        <div id="form-state">
+            <h1 class="spark-heading">What if we&hellip;</h1>
+
+            <form id="spark-form" class="spark-form" onsubmit="handleSubmit(event)" novalidate>
+
+                <input
+                    id="spark-input"
+                    type="text"
+                    class="spark-input"
+                    maxlength="300"
+                    placeholder="simplify the permit application process for new businesses?"
+                    autocomplete="off"
+                    autofocus
+                    oninput="handleTextInput(this)"
+                >
+
+                <!-- Expanding details section — appears when user starts typing -->
+                <div id="spark-expand" class="spark-expand">
+                    <div class="spark-expand-inner">
+                        <div>
+                            <label class="spark-expand-label" for="spark-desc">Additional Details (Optional)</label>
+                            <textarea
+                                id="spark-desc"
+                                class="spark-textarea"
+                                placeholder="Tell us a bit more about how this would work or why it matters..."
+                                rows="4"
+                            ></textarea>
+                        </div>
+
+                        <div class="spark-form-footer">
+                            <div class="spark-connected">
+                                <span class="spark-connected-dot"></span>
+                                Connected as Apex Staff
+                            </div>
+                            <div class="spark-footer-right">
+                                <span class="char-counter" id="char-counter">0/300</span>
+                                <button
+                                    type="submit"
+                                    id="submit-btn"
+                                    class="btn btn-primary"
+                                    disabled
+                                >Spark It</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- FAQ accordion -->
+            <div class="spark-faq mt-8">
+                <details>
+                    <summary>
+                        <span>What exactly is a Spark?</span>
+                        <span class="faq-arrow">&#8595;</span>
+                    </summary>
+                    <div class="faq-body">
+                        <p style="margin-top:1.25rem">
+                            A <strong style="color:var(--text-main)">Spark</strong> is a tiny seed for a big change.
+                            It's not a fully-fledged project proposal yet — it's that "What if we..." moment that
+                            hits you during your morning coffee or while walking down Salem Street.
+                        </p>
+
+                        <p style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-main);margin:1.25rem 0 0.5rem">
+                            Examples of Great Sparks:
+                        </p>
+                        <ul class="faq-list">
+                            <li>"What if we added solar benches to the Town Hall courtyard?"</li>
+                            <li>"What if we digitized the temporary sign permit process?"</li>
+                            <li>"What if we created a 'Welcome to Apex' kit for new business owners?"</li>
+                        </ul>
+
+                        <div class="faq-notice">
+                            <p style="font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-main);margin:0 0 0.5rem">
+                                The Upvote System:
+                            </p>
+                            <p style="margin:0">
+                                Each person can upvote a Spark once. Upvotes help us understand collective interest
+                                and priority. You can always change your mind by clicking the vote button again.
+                            </p>
+                        </div>
+
+                        <p style="font-size:0.6875rem;font-style:italic;opacity:0.6;margin-top:1rem">
+                            <strong>Disclaimer:</strong> Sharing an idea doesn't guarantee implementation.
+                            Everything shared here is reviewed and considered seriously by the IT Innovations
+                            team, but constraints like budget, policy, and staffing apply. We're here to
+                            listen, explore, and ignite change together.
+                        </p>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Navigation link to feed -->
+            <a href="/sparks" class="explore-link">
+                <span>Explore existing sparks</span>
+                <span class="arrow">&rarr;</span>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        restoreSession(initPage);
+    });
+
+    function initPage(user) {
+        // Page ready — user is authenticated
+    }
+
+    function handleTextInput(input) {
+        const len = input.value.length;
+        const expand  = document.getElementById('spark-expand');
+        const counter = document.getElementById('char-counter');
+        const btn     = document.getElementById('submit-btn');
+
+        counter.textContent = `${len}/300`;
+        btn.disabled = len === 0;
+
+        if (len > 0) {
+            expand.classList.add('open');
+        } else {
+            expand.classList.remove('open');
+        }
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        const text = document.getElementById('spark-input').value.trim();
+        const desc = document.getElementById('spark-desc').value.trim();
+        if (!text) return;
+
+        try {
+            const res = await apiFetch('/ideas/', {
+                method: 'POST',
+                body: JSON.stringify({ text, description: desc || null })
+            });
+
+            if (!res.ok) return;
+
+            // Show success state, then redirect
+            document.getElementById('form-state').classList.add('hidden');
+            document.getElementById('success-state').classList.remove('hidden');
+
+            // Check achievements (non-blocking)
+            checkNewAchievements();
+
+            setTimeout(() => { window.location.href = '/sparks'; }, 1500);
+
+        } catch (err) {
+            console.error('Spark submit failed:', err);
+        }
+    }
+</script>
+{% endblock %}

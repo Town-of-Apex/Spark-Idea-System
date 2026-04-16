@@ -18,6 +18,10 @@ RUN uv sync --frozen --no-install-project --no-dev
 # Copy backend source code
 COPY backend/ ./backend/
 
+# Copy Jinja2 templates and static assets into the backend working directory
+COPY backend/templates/ ./templates/
+COPY backend/static/ ./static/
+
 # Set working directory to the backend folder so imports work correctly
 WORKDIR /app/backend
 

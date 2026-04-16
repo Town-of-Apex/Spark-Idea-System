@@ -1,5 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -25,14 +28,48 @@ with open(BADGES_PATH, "r") as f:
 
 app = FastAPI(title="Spark Idea System MVP API")
 
+# ─── Static files & templates ────────────────────────────────────────────────
+# Paths are relative to the backend/ working directory.
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
 # Setup CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # for development
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Page-serving routes ─────────────────────────────────────────────────────
+# These return rendered HTML shells; auth is enforced client-side via localStorage
+# (matching the original Next.js behaviour). API endpoints protect data server-side.
+
+@app.get("/login", response_class=HTMLResponse, include_in_schema=False)
+async def page_login(request: Request):
+    return templates.TemplateResponse(request=request, name="login.html")
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def page_index(request: Request):
+    return templates.TemplateResponse(request=request, name="index.html")
+
+@app.get("/sparks", response_class=HTMLResponse, include_in_schema=False)
+async def page_sparks(request: Request):
+    return templates.TemplateResponse(request=request, name="sparks.html")
+
+@app.get("/visualizations", response_class=HTMLResponse, include_in_schema=False)
+async def page_visualizations(request: Request):
+    return templates.TemplateResponse(request=request, name="visualizations.html")
+
+@app.get("/admin", response_class=HTMLResponse, include_in_schema=False)
+async def page_admin(request: Request):
+    # HTML shell only — admin enforcement is done by the JS + existing API guards.
+    return templates.TemplateResponse(request=request, name="admin.html")
+
+@app.get("/profile", response_class=HTMLResponse, include_in_schema=False)
+async def page_profile(request: Request):
+    return templates.TemplateResponse(request=request, name="profile.html")
 
 # --- AUTH LOGIC ---
 
@@ -80,8 +117,14 @@ def login(request: schemas.LoginRequest, db: Session = Depends(database.get_db))
             role=role
         )
         db.add(user)
-        db.commit()
-        db.refresh(user)
+    else:
+        # Update existing user's name if provided and refresh role
+        if request.display_name:
+            user.display_name = request.display_name
+        user.role = "admin" if email in ADMIN_EMAILS else "user"
+    
+    db.commit()
+    db.refresh(user)
     
     # Update login metrics
     now = datetime.now()

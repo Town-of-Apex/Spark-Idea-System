@@ -1,24 +1,14 @@
 #!/bin/bash
 
-# This script starts both the backend and frontend in development mode.
-# Both services will automatically reload when you save changes to your code.
-
-# Clean up background processes when the script exits (including on Ctrl-C)
-trap "kill 0" EXIT
+# Starts the Spark backend in development mode.
+# Uvicorn will automatically reload on any .py, .html, or .css changes.
+# Templates and static assets are mounted via docker-compose.dev.yml volumes,
+# so HTML/CSS edits are reflected immediately without a rebuild.
 
 echo "--------------------------------------------------------"
-echo "✨ Starting Spark Idea System Dev Stack"
+echo "✨ Starting Spark Dev Stack"
 echo "--------------------------------------------------------"
+echo "🚀 [Backend] http://localhost:8000"
+echo ""
 
-# 1. Start Backend (FastAPI)
-# Note: --reload is enabled so Python changes refresh the server automatically
-echo "🚀 [Backend] starting on http://localhost:8000"
-(cd backend && uv run uvicorn main:app --reload --port 8000) &
-
-# 2. Start Frontend (Next.js)
-# Note: 'next dev' has hot-reloading (HMR) built-in
-echo "💻 [Frontend] starting on http://localhost:3000"
-(cd frontend && npm run dev) &
-
-# Keep the script running to stay attached to background processes
-wait
+cd backend && uv run uvicorn main:app --reload --port 8000
