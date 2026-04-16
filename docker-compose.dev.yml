@@ -1,0 +1,39 @@
+services:
+  backend:
+    # Build from the same Dockerfile
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    # Override command to enable hot-reloading
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app/backend
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./uv.lock:/app/uv.lock
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENV=development
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434/api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    # Override command for Next.js dev server
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      # Ensure node_modules from the container is used, not the host's
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
+# Run with docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build

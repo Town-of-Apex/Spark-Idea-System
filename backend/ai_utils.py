@@ -4,9 +4,11 @@ import numpy as np
 import re
 from collections import Counter
 
-OLLAMA_BASE_URL = "http://localhost:11434/api"
-EMBEDDING_MODEL = "embeddinggemma:latest"
-GENERATION_MODEL = "gemma3:4b"
+import os
+
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "embeddinggemma:latest")
+GENERATION_MODEL = os.getenv("GENERATION_MODEL", "gemma3:4b")
 
 CIVIC_STOPWORDS = {
     "the", "and", "town", "apex", "spark", "idea", "we", "what", "if", "for", "with", "from", "that", "this", "these", "those", 
