@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Apex Spark{% endblock %}</title>
+    <meta name="description" content="{% block meta_desc %}Spark — the Town of Apex idea marketplace.{% endblock %}">
+
+    <!-- Google Fonts (matches apex-modern.css) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="icon" href="static/icons/icon.ico" sizes="any">
+
+    <link rel="stylesheet" href="static/apex-modern.css">
+    <link rel="stylesheet" href="static/style.css">
+
+    {% block head_extra %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- ─── STICKY HEADER ────────────────────────────────────────────────── -->
+    <header>
+        <div class="app-container">
+            <div class="header-content">
+
+                <!-- Brand: logo mark + wordmark -->
+                <a href="/" class="header-brand" aria-label="Spark Home">
+                    <img src="static/icons/logo.svg" class="app-logo" alt="App Logo">
+                    <span class="brand-name">Spark</span>
+                </a>
+
+                <!-- Primary navigation -->
+                <nav class="header-nav" aria-label="Main navigation">
+                    <a href="/" class="nav-link" id="nav-index">Spark It</a>
+                    <a href="/sparks" class="nav-link" id="nav-sparks">Sparks</a>
+                    <a href="/visualizations" class="nav-link" id="nav-viz">Insights</a>
+                    <a href="/admin" class="nav-link admin-only hidden" id="nav-admin">Settings</a>
+                </nav>
+
+                <!-- User menu (right side) -->
+                <div class="header-right">
+                    <button class="user-menu-btn" id="user-menu-btn" onclick="toggleUserMenu()" aria-label="User menu">
+                        <span class="user-name-block">
+                            <span id="user-display-name"></span>
+                            <span id="user-role"></span>
+                        </span>
+                        <div class="user-avatar" id="user-avatar">?</div>
+                    </button>
+
+                    <div class="user-dropdown hidden" id="user-dropdown">
+                        <a href="/profile" class="dropdown-item"
+                            onclick="document.getElementById('user-dropdown').classList.add('hidden')">
+                            Your Profile
+                        </a>
+                        <button class="dropdown-item danger" onclick="doLogout()">Sign Out</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- ─── MAIN CONTENT ─────────────────────────────────────────────────── -->
+    <main class="main-content">
+        <div class="app-container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- ─── MODAL CONTAINER ──────────────────────────────────────────────── -->
+    <div id="modal-backdrop" class="modal-backdrop hidden" onclick="handleBackdropClick(event)">
+        <div class="modal-panel" id="modal-panel">
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- ─── TOAST CONTAINER ──────────────────────────────────────────────── -->
+    <div id="toast-container" aria-live="polite"></div>
+
+    <!-- ─── SHARED JS ────────────────────────────────────────────────────── -->
+    <script src="/static/auth.js"></script>
+    <script src="/static/modal.js"></script>
+
+    <!-- Page-specific scripts go here -->
+    {% block scripts %}{% endblock %}
+
+</body>
+
+</html>

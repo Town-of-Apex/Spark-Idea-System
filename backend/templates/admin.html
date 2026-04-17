@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings{% endblock %}
+{% block meta_desc %}Admin settings for the Spark Idea System.{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <p class="page-description">Admin Only</p>
+    <h1 class="page-title">System Settings</h1>
+</div>
+
+<div class="admin-grid">
+
+    <!-- ── Left: Main Settings Column ──────────────────────────────────────── -->
+    <div style="display:flex;flex-direction:column;gap:2rem">
+
+        <!-- Stat Cards -->
+        <div class="admin-stats-row">
+            <div class="stat-card">
+                <p class="stat-card-label">Total Sparks</p>
+                <p class="stat-card-value" id="stat-total">—</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-card-label">Interactions</p>
+                <p class="stat-card-value" id="stat-votes" style="color:var(--brand-teal)">—</p>
+            </div>
+        </div>
+
+        <!-- AI Insights Lab -->
+        <div class="admin-section">
+            <h2 class="admin-section-title">AI Insights Lab</h2>
+            <p class="admin-section-sub">Define custom dimensions for AI to analyze in every new Spark.</p>
+
+            <form class="admin-form" id="add-field-form" onsubmit="handleAddField(event)">
+                <div class="admin-form-row">
+                    <input
+                        id="field-label"
+                        type="text"
+                        class="admin-input"
+                        placeholder="Field Label (e.g. Utility)"
+                        required
+                    >
+                    <select id="field-type" class="admin-select">
+                        <option value="numeric">Numeric (0-10)</option>
+                        <option value="categorical">Categorical</option>
+                    </select>
+                </div>
+                <input
+                    id="field-desc"
+                    type="text"
+                    class="admin-input"
+                    placeholder="Description to guide the AI..."
+                >
+                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+                    Add Analyzing Dimension
+                </button>
+            </form>
+
+            <div id="ai-fields-list" class="space-y-2">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Tag Management -->
+        <div class="admin-section">
+            <h2 class="admin-section-title">Categorization Tags</h2>
+
+            <form class="tags-form" id="add-tag-form" onsubmit="handleAddTag(event)">
+                <input
+                    id="tag-name"
+                    type="text"
+                    class="admin-input"
+                    placeholder="New Tag Name (e.g. High ROI)"
+                    required
+                >
+                <input
+                    id="tag-color"
+                    type="color"
+                    class="color-input"
+                    value="#5C6B73"
+                    title="Choose tag color"
+                >
+                <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+
+            <div class="tags-list" id="tags-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Rotating Prompts Management -->
+        <div class="admin-section">
+            <h2 class="admin-section-title">Spark It Prompts</h2>
+            <p class="admin-section-sub">Configurable prompts that rotate on the main submission page.</p>
+
+            <form class="tags-form" id="add-prompt-form" onsubmit="handleAddPrompt(event)">
+                <input
+                    id="prompt-text"
+                    type="text"
+                    class="admin-input"
+                    placeholder="e.g. Could we..."
+                    required
+                >
+                <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+
+            <div class="space-y-2" id="prompts-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- AI Settings -->
+        <div class="admin-section">
+            <h2 class="admin-section-title">AI Similarity Engine</h2>
+            <p class="admin-section-sub">Adjust how strictly the system clusters related ideas.</p>
+
+            <div>
+                <!-- Similarity Threshold -->
+                <div class="slider-section">
+                    <div class="slider-header">
+                        <label class="slider-label" for="threshold-slider">Similarity Threshold</label>
+                        <span class="slider-value" id="threshold-display">—%</span>
+                    </div>
+                    <input
+                        id="threshold-slider"
+                        type="range"
+                        class="range-input"
+                        min="0" max="1" step="0.05"
+                        oninput="updateThresholdDisplay(this.value)"
+                        onchange="saveSettings()"
+                    >
+                    <div class="slider-foot">
+                        <span>Broad Clusters</span>
+                        <span>Exact Matches</span>
+                    </div>
+                </div>
+
+                <!-- New Idea TTL -->
+                <div class="slider-section">
+                    <div class="slider-header">
+                        <label class="slider-label" for="ttl-slider">"New" Spark TTL</label>
+                        <span class="slider-value" id="ttl-display">— Days</span>
+                    </div>
+                    <input
+                        id="ttl-slider"
+                        type="range"
+                        class="range-input"
+                        min="1" max="14" step="1"
+                        oninput="updateTTLDisplay(this.value)"
+                        onchange="saveSettings()"
+                        style="accent-color:var(--text-main)"
+                    >
+                    <p class="slider-note">Controls how long a spark displays the "New" badge.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Right: Sidebar ────────────────────────────────────────────────────── -->
+    <div style="display:flex;flex-direction:column;gap:2rem">
+
+        <!-- Tag Overview -->
+        <div class="admin-sidebar-panel admin-sidebar-dark">
+            <h3 class="admin-sidebar-title">Tag Overview</h3>
+            <div id="tag-overview" class="space-y-2">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Department Activity -->
+        <div class="admin-sidebar-panel admin-sidebar-light">
+            <h3 class="admin-sidebar-title" style="color:var(--text-main)">Department Activity</h3>
+            <div id="dept-activity" class="space-y-4">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentTags     = [];
+    let currentPrompts  = [];
+    let totalIdeas      = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Admin-only page: requireAdmin redirects non-admins
+        restoreSession(initPage, { adminRequired: true });
+    });
+
+    async function initPage(user) {
+        await Promise.all([
+            fetchStats(),
+            fetchTags(),
+            fetchAiFields(),
+            fetchSettings()
+        ]);
+    }
+
+    // ── Stats ──────────────────────────────────────────────────────────────────
+    async function fetchStats() {
+        const res = await apiFetch('/admin/stats');
+        if (!res.ok) return;
+        const data = await res.json();
+        totalIdeas = data.total_ideas;
+        document.getElementById('stat-total').textContent = data.total_ideas;
+        document.getElementById('stat-votes').textContent = data.total_votes;
+        renderDeptActivity(data.ideas_by_department, data.total_ideas);
+    }
+
+    function renderDeptActivity(depts, total) {
+        const container = document.getElementById('dept-activity');
+        const entries = Object.entries(depts || {});
+        if (!entries.length) {
+            container.innerHTML = `<p style="font-size:0.875rem;color:var(--brand-rosy);font-style:italic">No department data yet.</p>`;
+            return;
+        }
+
+        container.innerHTML = entries.map(([dept, count]) => `
+            <div class="dept-bar-item">
+                <span class="dept-name">${escapeHtml(dept)}</span>
+                <div class="dept-bar-wrap">
+                    <div class="dept-bar-track">
+                        <div class="dept-bar-fill" style="width:${(count / Math.max(total, 1)) * 100}%"></div>
+                    </div>
+                    <span class="dept-count">${count}</span>
+                </div>
+            </div>`).join('');
+    }
+
+    // ── Settings ───────────────────────────────────────────────────────────────
+    async function fetchSettings() {
+        const res = await apiFetch('/admin/settings');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const thSlider = document.getElementById('threshold-slider');
+        const ttlSlider = document.getElementById('ttl-slider');
+        thSlider.value  = data.similarity_threshold;
+        ttlSlider.value = data.new_idea_ttl;
+
+        updateThresholdDisplay(data.similarity_threshold);
+        updateTTLDisplay(data.new_idea_ttl);
+        
+        currentPrompts = data.rotating_prompts || [];
+        renderPrompts(currentPrompts);
+    }
+
+    function updateThresholdDisplay(val) {
+        document.getElementById('threshold-display').textContent = `${(val * 100).toFixed(0)}%`;
+    }
+
+    function updateTTLDisplay(val) {
+        document.getElementById('ttl-display').textContent = `${val} Day${val != 1 ? 's' : ''}`;
+    }
+
+    async function saveSettings() {
+        const threshold = parseFloat(document.getElementById('threshold-slider').value);
+        const ttl       = parseInt(document.getElementById('ttl-slider').value);
+
+        await apiFetch('/admin/settings', {
+            method: 'PATCH',
+            body: JSON.stringify({ 
+                similarity_threshold: threshold, 
+                new_idea_ttl: ttl,
+                rotating_prompts: currentPrompts
+            })
+        });
+    }
+
+    // ── AI Fields ──────────────────────────────────────────────────────────────
+    async function fetchAiFields() {
+        const res = await apiFetch('/admin/ai-fields');
+        if (!res.ok) return;
+        renderAiFields(await res.json());
+    }
+
+    function renderAiFields(fields) {
+        const container = document.getElementById('ai-fields-list');
+        if (!fields.length) {
+            container.innerHTML = `<p style="font-size:0.875rem;color:var(--brand-rosy);font-style:italic">No fields defined yet.</p>`;
+            return;
+        }
+
+        container.innerHTML = fields.map(f => `
+            <div class="ai-field-item">
+                <div style="min-width:0">
+                    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem">
+                        <span class="ai-field-name">${escapeHtml(f.label)}</span>
+                        <span class="ai-field-type-badge">${escapeHtml(f.field_type)}</span>
+                    </div>
+                    <p class="ai-field-desc">${escapeHtml(f.description || '')}</p>
+                </div>
+                <button class="delete-btn" onclick="handleDeleteField(${f.id})" title="Delete field">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>`).join('');
+    }
+
+    async function handleAddField(e) {
+        e.preventDefault();
+        const label = document.getElementById('field-label').value.trim();
+        const type  = document.getElementById('field-type').value;
+        const desc  = document.getElementById('field-desc').value.trim();
+        if (!label) return;
+
+        await apiFetch('/admin/ai-fields', {
+            method: 'POST',
+            body: JSON.stringify({ label, description: desc, field_type: type })
+        });
+
+        document.getElementById('field-label').value = '';
+        document.getElementById('field-desc').value  = '';
+        fetchAiFields();
+    }
+
+    async function handleDeleteField(id) {
+        await apiFetch(`/admin/ai-fields/${id}`, { method: 'DELETE' });
+        fetchAiFields();
+    }
+
+    // ── Tags ───────────────────────────────────────────────────────────────────
+    async function fetchTags() {
+        const res = await apiFetch('/tags/');
+        if (!res.ok) return;
+        currentTags = await res.json();
+        renderTags(currentTags);
+        renderTagOverview(currentTags);
+    }
+
+    function renderTags(tags) {
+        const container = document.getElementById('tags-list');
+        if (!tags.length) {
+            container.innerHTML = `<p style="font-size:0.875rem;color:var(--brand-rosy);font-style:italic">No tags defined.</p>`;
+            return;
+        }
+
+        container.innerHTML = tags.map(tag => `
+            <div class="tag-item" id="tag-item-${tag.id}">
+                <span class="tag-color-dot" style="background:${tag.color}"></span>
+                <span class="tag-name">${escapeHtml(tag.name)}</span>
+                <button class="delete-btn" onclick="handleDeleteTag(${tag.id})" title="Delete tag">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>`).join('');
+    }
+
+    function renderTagOverview(tags) {
+        const container = document.getElementById('tag-overview');
+        if (!tags.length) {
+            container.innerHTML = `<p style="font-size:0.75rem;color:rgba(255,255,255,0.3);font-style:italic">No tags defined.</p>`;
+            return;
+        }
+
+        container.innerHTML = tags.map(tag => `
+            <div class="tag-overview-item">
+                <span class="tag-overview-name">${escapeHtml(tag.name)}</span>
+                <span class="tag-overview-dot" style="background:${tag.color}"></span>
+            </div>`).join('');
+    }
+
+    async function handleAddTag(e) {
+        e.preventDefault();
+        const name  = document.getElementById('tag-name').value.trim();
+        const color = document.getElementById('tag-color').value;
+        if (!name) return;
+
+        await apiFetch('/tags/', {
+            method: 'POST',
+            body: JSON.stringify({ name, color })
+        });
+
+        document.getElementById('tag-name').value = '';
+        fetchTags();
+    }
+
+    async function handleDeleteTag(id) {
+        await apiFetch(`/tags/${id}`, { method: 'DELETE' });
+        fetchTags();
+    }
+
+    // ── Prompts ──────────────────────────────────────────────────────────────
+    function renderPrompts(prompts) {
+        const container = document.getElementById('prompts-list');
+        if (!prompts.length) {
+            container.innerHTML = `<p style="font-size:0.875rem;color:var(--brand-rosy);font-style:italic">No prompts defined.</p>`;
+            return;
+        }
+
+        container.innerHTML = prompts.map((p, i) => `
+            <div class="ai-field-item">
+                <span style="font-size:0.875rem;font-weight:500">${escapeHtml(p)}</span>
+                <button class="delete-btn" onclick="handleDeletePrompt(${i})" title="Delete prompt">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>`).join('');
+    }
+
+    async function handleAddPrompt(e) {
+        e.preventDefault();
+        const text = document.getElementById('prompt-text').value.trim();
+        if (!text) return;
+        
+        currentPrompts.push(text);
+        document.getElementById('prompt-text').value = '';
+        renderPrompts(currentPrompts);
+        await saveSettings();
+    }
+
+    async function handleDeletePrompt(index) {
+        currentPrompts.splice(index, 1);
+        renderPrompts(currentPrompts);
+        await saveSettings();
+    }
+</script>
+{% endblock %}

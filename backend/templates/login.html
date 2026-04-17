@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | Spark — Town of Apex</title>
+    <meta name="description" content="Sign in to Spark, the Town of Apex internal idea marketplace.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/apex-modern.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <div class="login-page">
+        <div class="login-card">
+
+            <!-- Brand header -->
+            <div style="text-align:center">
+                <img src="static/icons/logo.svg" class="app-logo" alt="App Logo">
+                <h1 class="brand-name" style="text-align:center; font-size: 3rem;">Welcome to Spark</h1>
+                <p class="login-subtitle" style="text-align:center">Apex's Idea Marketplace</p>
+            </div>
+
+            <!-- Error message area (hidden by default) -->
+            <div id="login-error" class="login-error hidden"></div>
+
+            <!-- Step 1: Email -->
+            <form id="step1-form" onsubmit="handleStep1(event)">
+                <div style="margin-bottom:1.25rem">
+                    <label class="login-field-label" for="email-input">Work Email</label>
+                    <input id="email-input" type="email" class="login-input" placeholder="yourname@apexnc.org"
+                        autocomplete="email" required autofocus>
+                </div>
+                <button type="submit" class="btn-login-primary">Continue</button>
+                <p class="login-fine-print" style="margin-top:1rem">Demo Mode &mdash; No password or auth required.</p>
+            </form>
+
+            <!-- Step 2: Display name -->
+            <form id="step2-form" class="hidden" onsubmit="handleStep2(event)">
+                <div style="margin-bottom:1.25rem">
+                    <label class="login-field-label" for="name-input">What should we call you? (Optional)</label>
+                    <input id="name-input" type="text" class="login-input" placeholder="e.g. Connor M."
+                        autocomplete="nickname">
+                </div>
+                <div style="display:flex;gap:0.75rem">
+                    <button type="button" class="btn-login-back" onclick="goBackToStep1()">Back</button>
+                    <button type="submit" class="btn-login-teal">Enter Marketplace</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+        // If already logged in, skip login page
+        if (localStorage.getItem('spark_auth_token')) {
+            window.location.href = '/';
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('login-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function handleStep1(e) {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value.trim().toLowerCase();
+
+            if (!email.endsWith('@apexnc.org')) {
+                showError('Please enter a valid @apexnc.org email address.');
+                return;
+            }
+
+            hideError();
+            document.getElementById('step1-form').classList.add('hidden');
+            const step2 = document.getElementById('step2-form');
+            step2.classList.remove('hidden');
+            document.getElementById('name-input').focus();
+        }
+
+        function goBackToStep1() {
+            document.getElementById('step2-form').classList.add('hidden');
+            document.getElementById('step1-form').classList.remove('hidden');
+            hideError();
+        }
+
+        async function handleStep2(e) {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value.trim().toLowerCase();
+            const displayName = document.getElementById('name-input').value.trim();
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, display_name: displayName || null })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    showError(err.detail || 'Login failed. Please try again.');
+                    return;
+                }
+
+                const data = await res.json();
+                localStorage.setItem('spark_auth_token', data.token);
+                localStorage.setItem('spark_user', JSON.stringify(data.user));
+                window.location.href = '/';
+
+            } catch (err) {
+                showError('Network error. Please check your connection and try again.');
+            }
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+
+{% block title %}Insights{% endblock %}
+{% block meta_desc %}Analytics and visualizations for Spark ideas from the Town of Apex.{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <p class="page-description">Analytics</p>
+    <h1 class="page-title">Insights</h1>
+</div>
+
+<div class="viz-grid">
+
+    <!-- Left column: Tags + Word Cloud -->
+    <div class="viz-left-col">
+
+        <div class="viz-panel">
+            <h3 class="viz-panel-label">Tags</h3>
+            <div id="tag-bars">
+                <p style="font-size:0.8125rem;font-style:italic;color:var(--brand-rosy)">Loading&hellip;</p>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <h3 class="viz-panel-label">Key Words</h3>
+            <div class="word-cloud" id="word-cloud">
+                <p style="font-size:0.8125rem;font-style:italic;color:var(--brand-rosy)">Analyzing text density&hellip;</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right column: Matrix + Constellation + Recent -->
+    <div class="viz-right-col">
+
+        <!-- 1. Impact vs Difficulty Matrix -->
+        <div class="matrix-panel">
+            <div class="matrix-header">
+                <h2 class="matrix-title">Impact vs Difficulty</h2>
+                <p class="matrix-sub">As estimated by AI.</p>
+            </div>
+
+            <div class="matrix-container" id="matrix-container">
+                <!-- Axes -->
+                <div class="matrix-axis-v"></div>
+                <div class="matrix-axis-h"></div>
+
+                <!-- Quadrant labels -->
+                <span class="matrix-quad-label" style="top:1rem;left:1rem">Big Bets</span>
+                <span class="matrix-quad-label" style="top:1rem;right:1rem;text-align:right">Major Projects</span>
+                <span class="matrix-quad-label" style="bottom:1rem;left:1rem">Quick Wins</span>
+                <span class="matrix-quad-label" style="bottom:1rem;right:1rem;text-align:right">Fill-ins</span>
+
+                <!-- Axis labels -->
+                <span class="matrix-label-x">Implementation Difficulty &rarr;</span>
+                <span class="matrix-label-y">Public Impact &rarr;</span>
+
+                <!-- SVG scatter plot (populated by JS) -->
+                <svg id="matrix-svg" class="matrix-svg" viewBox="0 0 100 100"></svg>
+
+                <!-- Hover tooltip -->
+                <div id="matrix-tooltip" class="matrix-tooltip hidden">
+                    <p class="matrix-tooltip-label" id="tt-label">Spark</p>
+                    <p class="matrix-tooltip-text"  id="tt-text"></p>
+                    <div class="matrix-tooltip-footer">
+                        <span id="tt-impact"></span>
+                        <span id="tt-difficulty"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Similarity Constellation -->
+        <div class="constellation-panel">
+            <div class="constellation-glow"></div>
+
+            <div class="constellation-header">
+                <div>
+                    <h2 class="constellation-title">Similarity Constellation</h2>
+                    <p class="constellation-sub">Semantic clusters using AI embeddings. Similar ideas drift together.</p>
+                </div>
+                <span class="constellation-badge">Live Physics</span>
+            </div>
+
+            <div class="constellation-canvas-wrap" id="constellation-wrap">
+                <canvas id="constellation-canvas" class="constellation-canvas"></canvas>
+
+                <!-- Node hover tooltip (positioned by JS) -->
+                <div id="constellation-tooltip" class="constellation-tooltip hidden">
+                    <p class="constellation-tooltip-label" id="ct-label"></p>
+                    <p class="constellation-tooltip-text"  id="ct-text"></p>
+                </div>
+            </div>
+
+            <p class="constellation-footer">Apex Semantic Mapping Engine</p>
+        </div>
+
+        <!-- 3. Recent Sparks -->
+        <section>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.5rem">
+                <h2 style="font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--text-main);margin:0">
+                    Recent Sparks
+                </h2>
+            </div>
+            <div class="mini-cards-grid" id="recent-sparks">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allIdeas    = [];
+    let currentUser = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        restoreSession(initPage);
+    });
+
+    async function initPage(user) {
+        currentUser = user;
+        // Fetch all data in parallel
+        const [ideasRes, wordcloudRes] = await Promise.all([
+            apiFetch('/ideas/?limit=1000'),
+            apiFetch('/analytics/wordcloud')
+        ]);
+
+        if (ideasRes.ok)     allIdeas = await ideasRes.json();
+        if (wordcloudRes.ok) renderWordCloud(await wordcloudRes.json());
+
+        renderTagBars(allIdeas);
+        renderMatrix(allIdeas);
+        renderRecentSparks(allIdeas.slice(0, 4));
+        initConstellation();
+    }
+
+    // ── Tag Bars ─────────────────────────────────────────────────────────────
+    function renderTagBars(ideas) {
+        const container = document.getElementById('tag-bars');
+        if (!ideas.length) {
+            container.innerHTML = `<p style="font-size:0.8125rem;font-style:italic;color:var(--brand-rosy)">Waiting for sparks&hellip;</p>`;
+            return;
+        }
+
+        // Aggregate tags
+        const tagMap = {};
+        ideas.forEach(idea => {
+            idea.tags.forEach(t => {
+                if (!tagMap[t.name]) tagMap[t.name] = { count: 0, color: t.color };
+                tagMap[t.name].count++;
+            });
+        });
+
+        const entries = Object.entries(tagMap).sort((a, b) => b[1].count - a[1].count);
+
+        if (!entries.length) {
+            container.innerHTML = `<p style="font-size:0.8125rem;font-style:italic;color:var(--brand-rosy)">No tags assigned yet.</p>`;
+            return;
+        }
+
+        container.innerHTML = entries.map(([name, data]) => `
+            <div class="tag-bar-item">
+                <div class="tag-bar-header">
+                    <span>${escapeHtml(name)}</span>
+                    <span>${data.count}</span>
+                </div>
+                <div class="tag-bar-track">
+                    <div class="tag-bar-fill"
+                         style="width:${(data.count / ideas.length) * 100}%;background:${data.color}">
+                    </div>
+                </div>
+            </div>`).join('');
+    }
+
+    // ── Word Cloud ────────────────────────────────────────────────────────────
+    function renderWordCloud(words) {
+        const container = document.getElementById('word-cloud');
+        if (!words.length) {
+            container.innerHTML = `<p style="font-size:0.8125rem;font-style:italic;color:var(--brand-rosy)">Analyzing text density&hellip;</p>`;
+            return;
+        }
+
+        container.innerHTML = words.map((item, i) => {
+            const size  = Math.min(24, 10 + item.value * 2);
+            const opacity = Math.min(1, 0.4 + item.value * 0.1);
+            const color = i % 3 === 0 ? 'var(--text-main)' : 'var(--brand-teal)';
+            return `<span style="font-size:${size}px;opacity:${opacity};color:${color}">${escapeHtml(item.text)}</span>`;
+        }).join('');
+    }
+
+    // ── Impact / Difficulty Matrix ────────────────────────────────────────────
+    function renderMatrix(ideas) {
+        const svg = document.getElementById('matrix-svg');
+        const tooltip = document.getElementById('matrix-tooltip');
+
+        const points = ideas
+            .map(idea => ({
+                id:   idea.id,
+                text: idea.text,
+                x:    parseFloat(idea.ai_metadata?.['Implementation Difficulty'] ?? 'NaN'),
+                y:    parseFloat(idea.ai_metadata?.['Public Impact'] ?? 'NaN'),
+                color: idea.is_new ? '#F2A65A' : (idea.tags[0]?.color || '#5C6B73'),
+                isNew: idea.is_new
+            }))
+            .filter(p => !isNaN(p.x) && !isNaN(p.y));
+
+        if (!points.length) {
+            svg.innerHTML = `<text x="50" y="50" text-anchor="middle" fill="#968f8b" font-size="4" font-family="Inter,sans-serif">No AI data yet</text>`;
+            return;
+        }
+
+        svg.innerHTML = points.map(p => `
+            <circle
+                class="matrix-dot"
+                cx="${p.x * 10}"
+                cy="${100 - (p.y * 10)}"
+                r="1.8"
+                fill="${p.color}"
+                data-id="${p.id}"
+                data-text="${escapeHtml(p.text)}"
+                data-x="${p.x}"
+                data-y="${p.y}"
+                data-new="${p.isNew}"
+            />
+        `).join('');
+
+        // Attach hover events
+        svg.querySelectorAll('.matrix-dot').forEach(dot => {
+            dot.addEventListener('mouseenter', (e) => {
+                const cx   = parseFloat(dot.getAttribute('cx'));
+                const cy   = parseFloat(dot.getAttribute('cy'));
+                const text = dot.dataset.text;
+                const x    = dot.dataset.x;
+                const y    = dot.dataset.y;
+                const isNew = dot.dataset.new === 'true';
+
+                document.getElementById('tt-label').textContent      = isNew ? 'New Spark' : 'Spark';
+                document.getElementById('tt-text').textContent        = text;
+                document.getElementById('tt-impact').textContent      = `Impact: ${y}`;
+                document.getElementById('tt-difficulty').textContent  = `Difficulty: ${x}`;
+
+                tooltip.style.left = `${cx}%`;
+                tooltip.style.top  = `${cy}%`;
+                tooltip.classList.remove('hidden');
+            });
+
+            dot.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
+            });
+        });
+    }
+
+    // ── Recent Sparks ─────────────────────────────────────────────────────────
+    function renderRecentSparks(ideas) {
+        const container = document.getElementById('recent-sparks');
+        if (!ideas.length) {
+            container.innerHTML = `<p style="color:var(--brand-rosy);font-style:italic">No sparks yet.</p>`;
+            return;
+        }
+
+        container.innerHTML = ideas.map(idea => {
+            const tagPills = idea.tags.slice(0, 2).map(t =>
+                `<span class="tag-pill" style="background:${t.color}">${escapeHtml(t.name)}</span>`
+            ).join('');
+
+            return `
+                <div class="idea-card" onclick="openModal(${idea.id}, () => initPage(currentUser))">
+                    <div class="vote-col">
+                        <button class="vote-btn ${idea.has_voted ? 'voted' : ''}"
+                                onclick="event.stopPropagation()"
+                                style="pointer-events:none">
+                            <svg viewBox="0 0 24 24" ${idea.has_voted ? 'fill="currentColor"' : 'fill="transparent" stroke="currentColor" stroke-width="2.5"'}>
+                                <path d="M12 4L4 12h5v8h6v-8h5L12 4z" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="vote-count">${idea.vote_count}</span>
+                        </button>
+                    </div>
+                    <div class="idea-content">
+                        <div class="idea-tags-left" style="margin-bottom:0.5rem">${tagPills}</div>
+                        <h3 class="idea-title">${escapeHtml(idea.text)}</h3>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    // ══ SIMILARITY CONSTELLATION ═════════════════════════════════════════════
+    // Physics simulation using canvas + requestAnimationFrame.
+    // Ported directly from the original React component.
+
+    const FRICTION   = 0.90;
+    const ATTRACTION = 0.008;
+    const REPULSION  = 0.015;
+    const GRAVITY    = 0.0008;
+
+    let nodes      = [];
+    let links      = [];
+    let hoveredNode = null;
+    let maxDist    = 200;
+    let frameId    = null;
+    let canvasDims = { width: 800, height: 400 };
+
+    function initConstellation() {
+        const canvas = document.getElementById('constellation-canvas');
+        const wrap   = document.getElementById('constellation-wrap');
+
+        function updateSize() {
+            const rect = wrap.getBoundingClientRect();
+            canvasDims = { width: rect.width, height: rect.height };
+        }
+
+        updateSize();
+        window.addEventListener('resize', updateSize);
+
+        // Fetch constellation data
+        apiFetch('/analytics/constellation')
+            .then(r => r.json())
+            .then(data => {
+                links = data.links;
+                nodes = data.nodes.map(n => {
+                    const angle     = Math.random() * Math.PI * 2;
+                    const maxRadius = Math.min(canvasDims.width, canvasDims.height) * 0.4;
+                    const radius    = n.processing
+                        ? maxRadius
+                        : Math.random() * (maxRadius * 0.6);
+                    return {
+                        ...n,
+                        x:  canvasDims.width  / 2 + Math.cos(angle) * radius,
+                        y:  canvasDims.height / 2 + Math.sin(angle) * radius,
+                        vx: 0, vy: 0
+                    };
+                });
+
+                if (frameId) cancelAnimationFrame(frameId);
+                animateConstellation();
+            })
+            .catch(err => console.error('Constellation fetch failed:', err));
+
+        // Mouse hover detection
+        canvas.addEventListener('mousemove', (e) => {
+            const rect  = canvas.getBoundingClientRect();
+            const scale = (Math.min(canvasDims.width, canvasDims.height) * 0.45) / maxDist;
+            const mx    = (e.clientX - rect.left  - canvasDims.width  / 2) / scale + canvasDims.width  / 2;
+            const my    = (e.clientY - rect.top   - canvasDims.height / 2) / scale + canvasDims.height / 2;
+
+            const hit = nodes.find(n => {
+                const dx = n.x - mx, dy = n.y - my;
+                return Math.sqrt(dx*dx + dy*dy) < (15 / scale);
+            });
+
+            if (hit !== hoveredNode) {
+                hoveredNode = hit || null;
+                updateConstellationTooltip(hit, e, rect, scale);
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            hoveredNode = null;
+            document.getElementById('constellation-tooltip').classList.add('hidden');
+        });
+    }
+
+    function updateConstellationTooltip(node, e, rect, scale) {
+        const tooltip = document.getElementById('constellation-tooltip');
+        if (!node) { tooltip.classList.add('hidden'); return; }
+
+        const cx = (node.x - canvasDims.width  / 2) * scale + canvasDims.width  / 2;
+        const cy = (node.y - canvasDims.height / 2) * scale + canvasDims.height / 2;
+
+        document.getElementById('ct-label').textContent = node.processing ? 'Processing...' : 'Spark';
+        document.getElementById('ct-text').textContent  = node.text;
+
+        tooltip.style.left = `${cx}px`;
+        tooltip.style.top  = `${cy}px`;
+        tooltip.classList.remove('hidden');
+    }
+
+    function animateConstellation() {
+        const canvas = document.getElementById('constellation-canvas');
+        const ctx    = canvas.getContext('2d');
+        const { width, height } = canvasDims;
+
+        canvas.width  = width;
+        canvas.height = height;
+
+        // ── Physics ─────────────────────────────────────────────────────────
+        for (let i = 0; i < nodes.length; i++) {
+            const p1 = nodes[i];
+
+            // Node-to-node repulsion
+            for (let j = i + 1; j < nodes.length; j++) {
+                const p2  = nodes[j];
+                const dx  = p1.x - p2.x;
+                const dy  = p1.y - p2.y;
+                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+
+                if (dist < 200) {
+                    const force = (200 - dist) * REPULSION;
+                    p1.vx += (dx / dist) * force;
+                    p1.vy += (dy / dist) * force;
+                    p2.vx -= (dx / dist) * force;
+                    p2.vy -= (dy / dist) * force;
+                }
+            }
+
+            // Link attraction
+            links.forEach(l => {
+                if (l.source === p1.id || l.target === p1.id) {
+                    const otherId = l.source === p1.id ? l.target : l.source;
+                    const other   = nodes.find(n => n.id === otherId);
+                    if (other) {
+                        const dx    = p1.x - other.x;
+                        const dy    = p1.y - other.y;
+                        const dist  = Math.sqrt(dx*dx + dy*dy) || 1;
+                        const force = (dist - 50) * ATTRACTION * l.value;
+                        p1.vx -= (dx / dist) * force;
+                        p1.vy -= (dy / dist) * force;
+                    }
+                }
+            });
+
+            // Center gravity
+            p1.vx += ((width  / 2) - p1.x) * GRAVITY;
+            p1.vy += ((height / 2) - p1.y) * GRAVITY;
+
+            // Friction + integrate
+            p1.vx *= FRICTION;
+            p1.vy *= FRICTION;
+            p1.x  += p1.vx;
+            p1.y  += p1.vy;
+        }
+
+        // ── Dynamic zoom ─────────────────────────────────────────────────────
+        let currentMax = 100;
+        nodes.forEach(n => {
+            const d = Math.sqrt((n.x - width/2)**2 + (n.y - height/2)**2);
+            if (d > currentMax) currentMax = d;
+        });
+        maxDist = maxDist * 0.95 + currentMax * 0.05;
+        const scale = (Math.min(width, height) * 0.45) / maxDist;
+
+        // ── Draw ─────────────────────────────────────────────────────────────
+        ctx.clearRect(0, 0, width, height);
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+        ctx.scale(scale, scale);
+        ctx.translate(-width / 2, -height / 2);
+
+        // Links
+        ctx.lineWidth = 1.5 / scale;
+        links.forEach(l => {
+            const s = nodes.find(n => n.id === l.source);
+            const t = nodes.find(n => n.id === l.target);
+            if (s && t) {
+                ctx.strokeStyle = `rgba(47,111,94,${l.value * 0.4})`;
+                ctx.beginPath();
+                ctx.moveTo(s.x, s.y);
+                ctx.lineTo(t.x, t.y);
+                ctx.stroke();
+            }
+        });
+
+        // Nodes
+        nodes.forEach(n => {
+            const r = 7 / scale;
+
+            if (n.processing) {
+                const pulse = 1 + Math.sin(Date.now() * 0.005) * 0.2;
+                ctx.fillStyle   = 'rgba(242,166,90,0.4)';
+                ctx.strokeStyle = '#F2A65A';
+                ctx.setLineDash([2 / scale, 2 / scale]);
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, (4 / scale) * pulse, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.setLineDash([]);
+            } else {
+                ctx.fillStyle   = n.color;
+                ctx.shadowBlur  = 10 / scale;
+                ctx.shadowColor = n.color + '44';
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Hover ring
+            if (hoveredNode && hoveredNode.id === n.id) {
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth   = 2 / scale;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 12 / scale, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        });
+
+        ctx.restore();
+        frameId = requestAnimationFrame(animateConstellation);
+    }
+</script>
+{% endblock %}

@@ -53,6 +53,7 @@ class IdeaUpdate(BaseModel):
 class AdminSettings(BaseModel):
     similarity_threshold: float = 0.8
     new_idea_ttl: int = 2 # Days an idea stays "New"
+    rotating_prompts: List[str] = ["What if we...", "Could we...", "How about we...", "Why don't we..."]
 
 class AIFieldValue(BaseModel):
     field_id: int

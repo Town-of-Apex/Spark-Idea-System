@@ -1,5 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -25,14 +28,48 @@ with open(BADGES_PATH, "r") as f:
 
 app = FastAPI(title="Spark Idea System MVP API")
 
+# ─── Static files & templates ────────────────────────────────────────────────
+# Paths are relative to the backend/ working directory.
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
 # Setup CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # for development
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Page-serving routes ─────────────────────────────────────────────────────
+# These return rendered HTML shells; auth is enforced client-side via localStorage
+# (matching the original Next.js behaviour). API endpoints protect data server-side.
+
+@app.get("/login", response_class=HTMLResponse, include_in_schema=False)
+async def page_login(request: Request):
+    return templates.TemplateResponse(request=request, name="login.html")
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def page_index(request: Request):
+    return templates.TemplateResponse(request=request, name="index.html")
+
+@app.get("/sparks", response_class=HTMLResponse, include_in_schema=False)
+async def page_sparks(request: Request):
+    return templates.TemplateResponse(request=request, name="sparks.html")
+
+@app.get("/visualizations", response_class=HTMLResponse, include_in_schema=False)
+async def page_visualizations(request: Request):
+    return templates.TemplateResponse(request=request, name="visualizations.html")
+
+@app.get("/admin", response_class=HTMLResponse, include_in_schema=False)
+async def page_admin(request: Request):
+    # HTML shell only — admin enforcement is done by the JS + existing API guards.
+    return templates.TemplateResponse(request=request, name="admin.html")
+
+@app.get("/profile", response_class=HTMLResponse, include_in_schema=False)
+async def page_profile(request: Request):
+    return templates.TemplateResponse(request=request, name="profile.html")
 
 # --- AUTH LOGIC ---
 
@@ -80,8 +117,14 @@ def login(request: schemas.LoginRequest, db: Session = Depends(database.get_db))
             role=role
         )
         db.add(user)
-        db.commit()
-        db.refresh(user)
+    else:
+        # Update existing user's name if provided and refresh role
+        if request.display_name:
+            user.display_name = request.display_name
+        user.role = "admin" if email in ADMIN_EMAILS else "user"
+    
+    db.commit()
+    db.refresh(user)
     
     # Update login metrics
     now = datetime.now()
@@ -146,6 +189,8 @@ def startup_populate():
             db.add(models.Setting(key="similarity_threshold", value="0.8"))
         if db.query(models.Setting).filter(models.Setting.key == "new_idea_ttl").first() is None:
             db.add(models.Setting(key="new_idea_ttl", value="2"))
+        if db.query(models.Setting).filter(models.Setting.key == "rotating_prompts").first() is None:
+            db.add(models.Setting(key="rotating_prompts", value=json.dumps(["What if we...", "Could we...", "How about we...", "Why don't we..."])))
         db.commit()
         print("DB Seeded with default settings.")
 
@@ -389,6 +434,13 @@ def get_similar_ideas(idea_id: int, db: Session = Depends(database.get_db), curr
                 
     return similar[:5]
 
+@app.get("/public/settings")
+def get_public_settings(db: Session = Depends(database.get_db)):
+    prompts = db.query(models.Setting).filter(models.Setting.key == "rotating_prompts").first()
+    return {
+        "rotating_prompts": json.loads(prompts.value) if prompts else ["What if we..."]
+    }
+
 # --- TAGS & FIELDS ---
 
 @app.get("/tags/", response_model=List[schemas.Tag])
@@ -514,9 +566,11 @@ def get_system_stats(db: Session = Depends(database.get_db), current_user: model
 def get_admin_settings(db: Session = Depends(database.get_db), current_user: models.User = Depends(get_admin_user)):
     threshold = db.query(models.Setting).filter(models.Setting.key == "similarity_threshold").first()
     ttl = db.query(models.Setting).filter(models.Setting.key == "new_idea_ttl").first()
+    prompts = db.query(models.Setting).filter(models.Setting.key == "rotating_prompts").first()
     return {
         "similarity_threshold": float(threshold.value) if threshold else 0.8,
-        "new_idea_ttl": int(ttl.value) if ttl else 2
+        "new_idea_ttl": int(ttl.value) if ttl else 2,
+        "rotating_prompts": json.loads(prompts.value) if prompts else ["What if we..."]
     }
 
 @app.patch("/admin/settings", response_model=schemas.AdminSettings)
@@ -536,6 +590,14 @@ def update_admin_settings(settings: schemas.AdminSettings, db: Session = Depends
         db.add(ttl)
     else:
         ttl.value = str(settings.new_idea_ttl)
+    
+    # Update Prompts
+    prompts = db.query(models.Setting).filter(models.Setting.key == "rotating_prompts").first()
+    if not prompts:
+        prompts = models.Setting(key="rotating_prompts", value=json.dumps(settings.rotating_prompts))
+        db.add(prompts)
+    else:
+        prompts.value = json.dumps(settings.rotating_prompts)
 
     db.commit()
     return {"detail": "Settings updated"}

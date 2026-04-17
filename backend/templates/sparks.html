@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Sparks{% endblock %}
+{% block meta_desc %}Browse and upvote ideas from Town of Apex staff.{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-row">
+        <div>
+            <p class="page-description">Community Ideas</p>
+            <h1 class="page-title">Sparks</h1>
+            <p class="page-subtitle">The collective creativity of the Town of Apex. Upvote the ideas you want to see come to life.</p>
+        </div>
+        <!-- Sort toggle -->
+        <div class="sort-toggle-bar">
+            <button class="sort-btn active" id="sort-trending" onclick="switchSort('trending')">Trending</button>
+            <button class="sort-btn"        id="sort-new"      onclick="switchSort('new')">Newest</button>
+        </div>
+    </div>
+</div>
+
+<!-- Count label -->
+<div style="display:flex;justify-content:flex-end;margin-bottom:1.5rem">
+    <p class="count-label">
+        Showing <strong id="idea-count">0</strong> active sparks
+    </p>
+</div>
+
+<!-- Ideas list -->
+<div class="ideas-list" id="ideas-list">
+    <!-- Populated by JS -->
+    <div class="empty-state">
+        <p class="empty-title">Loading sparks&hellip;</p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSort = 'trending';
+    let currentUser = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        restoreSession(initPage);
+    });
+
+    function initPage(user) {
+        currentUser = user;
+        fetchIdeas('trending');
+    }
+
+    function switchSort(sort) {
+        if (sort === currentSort) return;
+        currentSort = sort;
+
+        document.getElementById('sort-trending').classList.toggle('active', sort === 'trending');
+        document.getElementById('sort-new').classList.toggle('active', sort === 'new');
+
+        fetchIdeas(sort);
+    }
+
+    async function fetchIdeas(sort) {
+        try {
+            const res = await apiFetch(`/ideas/?sort_by=${sort}`);
+            if (!res.ok) return;
+            const ideas = await res.json();
+            renderIdeas(ideas);
+        } catch (err) {
+            console.error('Fetch ideas failed:', err);
+        }
+    }
+
+    function renderIdeas(ideas) {
+        const list = document.getElementById('ideas-list');
+        document.getElementById('idea-count').textContent = ideas.length;
+
+        if (ideas.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <p class="empty-title">It's quiet in here&hellip;</p>
+                    <p class="empty-sub">Be the one to spark the next big thing.</p>
+                </div>`;
+            return;
+        }
+
+        list.innerHTML = ideas.map(idea => renderIdeaCard(idea)).join('');
+
+        // Fetch similar counts in background (non-blocking)
+        ideas.forEach(idea => {
+            if (idea.has_embedding) fetchSimilarCount(idea.id);
+        });
+    }
+
+    function renderIdeaCard(idea) {
+        const isAdmin = currentUser && currentUser.role === 'admin';
+        const tagPills = idea.tags.slice(0, 3).map(t =>
+            `<span class="tag-pill" style="background:${t.color}">${escapeHtml(t.name)}</span>`
+        ).join('');
+
+        const newBadge = idea.is_new
+            ? `<span class="status-tag status-new">New</span>`
+            : '';
+
+        const embeddingBadge = isAdmin ? `
+            <span class="embedding-badge ${idea.has_embedding ? 'ready' : 'pending'}">
+                ${idea.has_embedding ? 'AI READY' : 'AI PENDING'}
+            </span>
+            <button class="reprocess-btn" title="Manually trigger AI" onclick="event.stopPropagation();reprocessCard(${idea.id})">
+                REPROCESS
+            </button>` : '';
+
+        const authorInitial = (idea.user?.display_name || idea.username || 'A').charAt(0).toUpperCase();
+        const authorName    = escapeHtml(idea.user?.display_name || idea.username);
+        const date          = formatDate(idea.created_at);
+        const dept          = escapeHtml(idea.department || 'Town Staff');
+
+        return `
+            <div class="idea-card" id="card-${idea.id}" onclick="openModal(${idea.id}, () => fetchIdeas(currentSort))">
+                <!-- Vote column -->
+                <div class="vote-col">
+                    <button
+                        class="vote-btn ${idea.has_voted ? 'voted' : ''}"
+                        id="vote-btn-${idea.id}"
+                        onclick="event.stopPropagation(); handleVote(${idea.id})"
+                        aria-label="Vote for this idea"
+                        title="${idea.has_voted ? 'Remove vote' : 'Upvote this spark'}"
+                    >
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                             ${idea.has_voted ? 'fill="currentColor" stroke="none"' : 'fill="transparent" stroke="currentColor" stroke-width="2.5"'}>
+                            <path d="M12 4L4 12h5v8h6v-8h5L12 4z" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="vote-count" id="vote-count-${idea.id}">${idea.vote_count}</span>
+                    </button>
+                </div>
+
+                <!-- Content column -->
+                <div class="idea-content">
+                    <div class="idea-card-meta-row">
+                        <div class="idea-tags-left">
+                            ${newBadge}
+                            ${tagPills}
+                        </div>
+                        <div class="idea-meta-right">
+                            <span class="dept-badge">${dept}</span>
+                            ${embeddingBadge}
+                        </div>
+                    </div>
+
+                    <h3 class="idea-title">${escapeHtml(idea.text)}</h3>
+
+                    <div class="idea-card-footer">
+                        <div class="card-author">
+                            <div class="author-avatar">${authorInitial}</div>
+                            <span class="author-name">${authorName}</span>
+                        </div>
+                        <div class="card-stats">
+                            <span id="similar-${idea.id}" class="similar-count hidden">
+                                <span class="similar-dot"></span>
+                                <span class="similar-label"></span>
+                            </span>
+                            <span class="card-date">${date}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    async function handleVote(ideaId) {
+        try {
+            const res = await apiFetch(`/ideas/${ideaId}/vote`, { method: 'POST' });
+            if (!res.ok) return;
+            const updated = await res.json();
+
+            // Update vote button state in-place (no full re-render)
+            const btn   = document.getElementById(`vote-btn-${ideaId}`);
+            const count = document.getElementById(`vote-count-${ideaId}`);
+
+            if (btn) {
+                btn.classList.toggle('voted', updated.has_voted);
+                const svg = btn.querySelector('svg');
+                if (svg) {
+                    if (updated.has_voted) {
+                        svg.setAttribute('fill', 'currentColor');
+                        svg.removeAttribute('stroke');
+                    } else {
+                        svg.setAttribute('fill', 'transparent');
+                        svg.setAttribute('stroke', 'currentColor');
+                        svg.setAttribute('stroke-width', '2.5');
+                    }
+                }
+            }
+
+            if (count) count.textContent = updated.vote_count;
+
+            checkNewAchievements();
+        } catch (err) {
+            console.error('Vote failed:', err);
+        }
+    }
+
+    async function reprocessCard(ideaId) {
+        try {
+            await apiFetch(`/ideas/${ideaId}/process`, { method: 'POST' });
+            showToast('AI reprocessing queued.');
+        } catch (err) {
+            console.error('Reprocess failed:', err);
+        }
+    }
+
+    async function fetchSimilarCount(ideaId) {
+        try {
+            const res = await apiFetch(`/ideas/${ideaId}/similar`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.length > 0) {
+                const el = document.getElementById(`similar-${ideaId}`);
+                if (el) {
+                    el.querySelector('.similar-label').textContent = `${data.length} similar spark${data.length !== 1 ? 's' : ''}`;
+                    el.classList.remove('hidden');
+                }
+            }
+        } catch (err) {
+            // Non-critical; similar count is decorative
+        }
+    }
+</script>
+{% endblock %}
