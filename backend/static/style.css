@@ -1277,7 +1277,7 @@ details[open] .faq-arrow { transform: rotate(180deg); }
 .matrix-container {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1 / 1;
     background: rgba(248,249,250,0.3);
     border-radius: var(--radius-card);
     border: 1px solid rgba(233,236,239,0.3);
@@ -1704,3 +1704,32 @@ details[open] .faq-arrow { transform: rotate(180deg); }
 .mb-6 { margin-bottom: 1.5rem; }
 .space-y-4 > * + * { margin-top: 1rem; }
 .space-y-2 > * + * { margin-top: 0.5rem; }
+
+/* ═══════════════════════════════════════════════════════
+   ROTATING PROMPTS (vertical roll)
+   Used in index.html
+═══════════════════════════════════════════════════════ */
+.prompt-container {
+    height: clamp(3rem, 7vw, 5rem);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.prompt-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.prompt-item {
+    height: clamp(3rem, 7vw, 5rem);
+    display: flex;
+    align-items: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.5rem, 6vw, 3.5rem);
+    color: var(--brand-teal);
+    letter-spacing: -0.02em;
+    margin: 0;
+}

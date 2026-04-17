@@ -189,6 +189,8 @@ def startup_populate():
             db.add(models.Setting(key="similarity_threshold", value="0.8"))
         if db.query(models.Setting).filter(models.Setting.key == "new_idea_ttl").first() is None:
             db.add(models.Setting(key="new_idea_ttl", value="2"))
+        if db.query(models.Setting).filter(models.Setting.key == "rotating_prompts").first() is None:
+            db.add(models.Setting(key="rotating_prompts", value=json.dumps(["What if we...", "Could we...", "How about we...", "Why don't we..."])))
         db.commit()
         print("DB Seeded with default settings.")
 
@@ -432,6 +434,13 @@ def get_similar_ideas(idea_id: int, db: Session = Depends(database.get_db), curr
                 
     return similar[:5]
 
+@app.get("/public/settings")
+def get_public_settings(db: Session = Depends(database.get_db)):
+    prompts = db.query(models.Setting).filter(models.Setting.key == "rotating_prompts").first()
+    return {
+        "rotating_prompts": json.loads(prompts.value) if prompts else ["What if we..."]
+    }
+
 # --- TAGS & FIELDS ---
 
 @app.get("/tags/", response_model=List[schemas.Tag])
@@ -557,9 +566,11 @@ def get_system_stats(db: Session = Depends(database.get_db), current_user: model
 def get_admin_settings(db: Session = Depends(database.get_db), current_user: models.User = Depends(get_admin_user)):
     threshold = db.query(models.Setting).filter(models.Setting.key == "similarity_threshold").first()
     ttl = db.query(models.Setting).filter(models.Setting.key == "new_idea_ttl").first()
+    prompts = db.query(models.Setting).filter(models.Setting.key == "rotating_prompts").first()
     return {
         "similarity_threshold": float(threshold.value) if threshold else 0.8,
-        "new_idea_ttl": int(ttl.value) if ttl else 2
+        "new_idea_ttl": int(ttl.value) if ttl else 2,
+        "rotating_prompts": json.loads(prompts.value) if prompts else ["What if we..."]
     }
 
 @app.patch("/admin/settings", response_model=schemas.AdminSettings)
@@ -579,6 +590,14 @@ def update_admin_settings(settings: schemas.AdminSettings, db: Session = Depends
         db.add(ttl)
     else:
         ttl.value = str(settings.new_idea_ttl)
+    
+    # Update Prompts
+    prompts = db.query(models.Setting).filter(models.Setting.key == "rotating_prompts").first()
+    if not prompts:
+        prompts = models.Setting(key="rotating_prompts", value=json.dumps(settings.rotating_prompts))
+        db.add(prompts)
+    else:
+        prompts.value = json.dumps(settings.rotating_prompts)
 
     db.commit()
     return {"detail": "Settings updated"}

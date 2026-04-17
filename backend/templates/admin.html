@@ -89,6 +89,27 @@
             </div>
         </div>
 
+        <!-- Rotating Prompts Management -->
+        <div class="admin-section">
+            <h2 class="admin-section-title">Spark It Prompts</h2>
+            <p class="admin-section-sub">Configurable prompts that rotate on the main submission page.</p>
+
+            <form class="tags-form" id="add-prompt-form" onsubmit="handleAddPrompt(event)">
+                <input
+                    id="prompt-text"
+                    type="text"
+                    class="admin-input"
+                    placeholder="e.g. Could we..."
+                    required
+                >
+                <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+
+            <div class="space-y-2" id="prompts-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
         <!-- AI Settings -->
         <div class="admin-section">
             <h2 class="admin-section-title">AI Similarity Engine</h2>
@@ -163,8 +184,9 @@
 
 {% block scripts %}
 <script>
-    let currentTags   = [];
-    let totalIdeas    = 0;
+    let currentTags     = [];
+    let currentPrompts  = [];
+    let totalIdeas      = 0;
 
     document.addEventListener('DOMContentLoaded', () => {
         // Admin-only page: requireAdmin redirects non-admins
@@ -224,6 +246,9 @@
 
         updateThresholdDisplay(data.similarity_threshold);
         updateTTLDisplay(data.new_idea_ttl);
+        
+        currentPrompts = data.rotating_prompts || [];
+        renderPrompts(currentPrompts);
     }
 
     function updateThresholdDisplay(val) {
@@ -240,7 +265,11 @@
 
         await apiFetch('/admin/settings', {
             method: 'PATCH',
-            body: JSON.stringify({ similarity_threshold: threshold, new_idea_ttl: ttl })
+            body: JSON.stringify({ 
+                similarity_threshold: threshold, 
+                new_idea_ttl: ttl,
+                rotating_prompts: currentPrompts
+            })
         });
     }
 
@@ -357,6 +386,42 @@
     async function handleDeleteTag(id) {
         await apiFetch(`/tags/${id}`, { method: 'DELETE' });
         fetchTags();
+    }
+
+    // ── Prompts ──────────────────────────────────────────────────────────────
+    function renderPrompts(prompts) {
+        const container = document.getElementById('prompts-list');
+        if (!prompts.length) {
+            container.innerHTML = `<p style="font-size:0.875rem;color:var(--brand-rosy);font-style:italic">No prompts defined.</p>`;
+            return;
+        }
+
+        container.innerHTML = prompts.map((p, i) => `
+            <div class="ai-field-item">
+                <span style="font-size:0.875rem;font-weight:500">${escapeHtml(p)}</span>
+                <button class="delete-btn" onclick="handleDeletePrompt(${i})" title="Delete prompt">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>`).join('');
+    }
+
+    async function handleAddPrompt(e) {
+        e.preventDefault();
+        const text = document.getElementById('prompt-text').value.trim();
+        if (!text) return;
+        
+        currentPrompts.push(text);
+        document.getElementById('prompt-text').value = '';
+        renderPrompts(currentPrompts);
+        await saveSettings();
+    }
+
+    async function handleDeletePrompt(index) {
+        currentPrompts.splice(index, 1);
+        renderPrompts(currentPrompts);
+        await saveSettings();
     }
 </script>
 {% endblock %}

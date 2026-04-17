@@ -11,4 +11,4 @@ echo "--------------------------------------------------------"
 echo "🚀 [Backend] http://localhost:8000"
 echo ""
 
-cd backend && uv run uvicorn main:app --reload --port 8000
+cd backend && uv run uvicorn main:app --reload --reload-include "*.json" --port 8000

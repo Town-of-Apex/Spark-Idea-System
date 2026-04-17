@@ -8,8 +8,8 @@
         "icon": "Zap"
     },
     {
-        "id": "human_tesla_coil",
-        "name": "Human Tesla Coil",
+        "id": "flint_and_steel",
+        "name": "Flint and Steel",
         "description": "Shared 5 Sparks. Generating ideas at an alarming rate.",
         "metric": "sparks_shared",
         "threshold": 5,

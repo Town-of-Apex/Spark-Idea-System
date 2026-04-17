@@ -22,7 +22,11 @@
 
         <!-- Form state -->
         <div id="form-state">
-            <h1 class="spark-heading">What if we&hellip;</h1>
+            <div class="prompt-container">
+                <ul class="prompt-list" id="prompt-list">
+                    <li class="prompt-item">What if we&hellip;</li>
+                </ul>
+            </div>
 
             <form id="spark-form" class="spark-form" onsubmit="handleSubmit(event)" novalidate>
 
@@ -130,8 +134,41 @@
         restoreSession(initPage);
     });
 
-    function initPage(user) {
-        // Page ready — user is authenticated
+    async function initPage(user) {
+        await initPrompts();
+    }
+
+    async function initPrompts() {
+        const res = await apiFetch('/public/settings');
+        if (!res.ok) return;
+        const data = await res.json();
+        const prompts = data.rotating_prompts || ["What if we..."];
+        
+        const list = document.getElementById('prompt-list');
+        // If we have custom prompts, replace the default
+        if (prompts.length > 0) {
+            list.innerHTML = prompts.map(p => `<li class="prompt-item">${escapeHtml(p)}</li>`).join('');
+            // Append first one to end for smooth loops
+            list.innerHTML += `<li class="prompt-item">${escapeHtml(prompts[0])}</li>`;
+        }
+
+        if (prompts.length <= 1) return;
+
+        let index = 0;
+        setInterval(() => {
+            const itemHeight = list.firstElementChild.getBoundingClientRect().height;
+            index++;
+            list.style.transition = 'transform 0.6s cubic-bezier(0.65, 0, 0.35, 1)';
+            list.style.transform = `translateY(-${index * itemHeight}px)`;
+            
+            if (index >= prompts.length) {
+                setTimeout(() => {
+                    list.style.transition = 'none';
+                    index = 0;
+                    list.style.transform = `translateY(0)`;
+                }, 600);
+            }
+        }, 4000);
     }
 
     function handleTextInput(input) {
